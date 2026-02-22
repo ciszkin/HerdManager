@@ -11,6 +11,7 @@ import by.ciszkin.herdmanager.domain.repository.RegistryRepository
 import by.ciszkin.herdmanager.domain.usecase.DeleteModelUseCase
 import by.ciszkin.herdmanager.domain.usecase.GetModelsUseCase
 import by.ciszkin.herdmanager.domain.usecase.GetRegistryModelsUseCase
+import by.ciszkin.herdmanager.domain.usecase.GetRunningModelsUseCase
 import by.ciszkin.herdmanager.domain.usecase.PullModelUseCase
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
@@ -31,5 +32,6 @@ object AppModule {
     val getModelsUseCase by lazy { GetModelsUseCase(repository) }
     val deleteModelUseCase by lazy { DeleteModelUseCase(repository) }
     val getRegistryModelsUseCase by lazy { GetRegistryModelsUseCase(registryRepository) }
+    val getRunningModelsUseCase by lazy { GetRunningModelsUseCase(repository) }
     val pullModelUseCase by lazy { PullModelUseCase(repository) }
 }

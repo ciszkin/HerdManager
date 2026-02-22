@@ -11,8 +11,8 @@ import by.ciszkin.herdmanager.presentation.components.AdaptiveScaffold
 import by.ciszkin.herdmanager.presentation.components.NavigationItem
 import by.ciszkin.herdmanager.presentation.modellist.ModelListScreen
 import by.ciszkin.herdmanager.presentation.registry.RegistryScreen
-import by.ciszkin.herdmanager.presentation.root.RunningScreen
 import by.ciszkin.herdmanager.presentation.root.SettingsScreen
+import by.ciszkin.herdmanager.presentation.running.RunningScreen
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
 
@@ -37,7 +37,11 @@ fun App() {
                             SlideTransition(navigator)
                         }
                     }
-                    NavigationItem.Running.route -> RunningScreen()
+                    NavigationItem.Running.route -> {
+                        Navigator(RunningScreen) { navigator ->
+                            SlideTransition(navigator)
+                        }
+                    }
                     NavigationItem.Settings.route -> SettingsScreen()
                 }
             }

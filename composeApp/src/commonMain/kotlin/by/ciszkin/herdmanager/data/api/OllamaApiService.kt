@@ -3,6 +3,8 @@ package by.ciszkin.herdmanager.data.api
 import by.ciszkin.herdmanager.domain.model.OllamaModel
 import by.ciszkin.herdmanager.domain.model.OllamaModelsResponse
 import by.ciszkin.herdmanager.domain.model.PullProgress
+import by.ciszkin.herdmanager.domain.model.RunningModel
+import by.ciszkin.herdmanager.domain.model.RunningModelsResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.timeout
@@ -32,6 +34,9 @@ class OllamaApiService(private val client: HttpClient) {
 
     suspend fun getModels(): List<OllamaModel> =
         client.get("/api/tags").body<OllamaModelsResponse>().models
+
+    suspend fun getRunningModels(): List<RunningModel> =
+        client.get("/api/ps").body<RunningModelsResponse>().models
 
     suspend fun deleteModel(name: String) = client.delete("/api/delete") {
         setBody(DeleteRequest(model = name))
