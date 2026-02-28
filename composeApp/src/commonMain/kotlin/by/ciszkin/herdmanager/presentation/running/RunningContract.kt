@@ -6,9 +6,8 @@ import by.ciszkin.herdmanager.presentation.architecture.MviIntent
 import by.ciszkin.herdmanager.presentation.architecture.MviState
 
 sealed interface RunningIntent : MviIntent {
-    data object LoadModels : RunningIntent
-    data object Retry : RunningIntent
-    data object StartPolling : RunningIntent
+    data object Initialize : RunningIntent
+    data object Refresh : RunningIntent
     data object StopPolling : RunningIntent
 }
 
@@ -16,7 +15,8 @@ data class RunningState(
     val models: List<RunningModel> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isPolling: Boolean = false
+    val pollingEnabled: Boolean = false,
+    val pollingIntervalMs: Long = 0L
 ) : MviState
 
 sealed interface RunningEffect : MviEffect {

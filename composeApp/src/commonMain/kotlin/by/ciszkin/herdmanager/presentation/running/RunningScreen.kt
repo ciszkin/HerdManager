@@ -35,14 +35,15 @@ object RunningScreen : Screen {
     override fun Content() {
         val viewModel = rememberScreenModel {
             RunningViewModel(
-                getRunningModelsUseCase = AppModule.getRunningModelsUseCase
+                getRunningModelsUseCase = AppModule.getRunningModelsUseCase,
+                observeSettingsUseCase = AppModule.observeSettingsUseCase
             )
         }
         val state by viewModel.state.collectAsState()
         val rotation = remember { Animatable(0f) }
 
         LaunchedEffect(Unit) {
-            viewModel.onIntent(RunningIntent.StartPolling)
+            viewModel.onIntent(RunningIntent.Initialize)
             viewModel.effect.collect { effect ->
                 when (effect) {
                     RunningEffect.AnimateRefreshIcon -> {
@@ -70,12 +71,12 @@ object RunningScreen : Screen {
                     title = { Text("Running Models") },
                     actions = {
                         IconButton(onClick = {
-                            viewModel.onIntent(RunningIntent.Retry)
+                            viewModel.onIntent(RunningIntent.Refresh)
                         }) {
                             Icon(
                                 imageVector = FeatherIcons.RefreshCw,
                                 contentDescription = "Refresh",
-                                tint = if (state.isPolling) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                tint = if (state.pollingEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.rotate(rotation.value)
                             )
                         }
@@ -88,7 +89,7 @@ object RunningScreen : Screen {
                 !state.isLoading && state.models.isEmpty() -> EmptyView()
                 state.error != null -> ErrorView(
                     error = state.error,
-                    onRetry = { viewModel.onIntent(RunningIntent.Retry) }
+                    onRetry = { viewModel.onIntent(RunningIntent.Refresh) }
                 )
                 else -> RunningModelsList(
                     models = state.models,
