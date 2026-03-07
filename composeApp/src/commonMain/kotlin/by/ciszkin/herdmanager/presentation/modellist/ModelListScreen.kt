@@ -1,21 +1,12 @@
 package by.ciszkin.herdmanager.presentation.modellist
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -24,16 +15,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import by.ciszkin.herdmanager.di.AppModule
 import by.ciszkin.herdmanager.domain.model.OllamaModel
+import by.ciszkin.herdmanager.presentation.components.EmptyView
+import by.ciszkin.herdmanager.presentation.components.ErrorView
+import by.ciszkin.herdmanager.presentation.components.LoadingView
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.RefreshCw
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 object ModelListScreen : Screen {
@@ -48,6 +42,8 @@ object ModelListScreen : Screen {
             )
         }
         val state by viewModel.state.collectAsState()
+        val snackbarHostState = remember { SnackbarHostState() }
+        val coroutineScope = rememberCoroutineScope()
         var showDeleteDialog by remember { mutableStateOf<String?>(null) }
         var showDetailsDialog by remember { mutableStateOf<OllamaModel?>(null) }
 
@@ -59,6 +55,9 @@ object ModelListScreen : Screen {
             viewModel.effect.collect { effect ->
                 when (effect) {
                     is ModelListEffect.ShowToast -> {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(effect.message)
+                        }
                     }
                     is ModelListEffect.ShowDeleteConfirmation -> {
                         showDeleteDialog = effect.modelName
@@ -77,11 +76,13 @@ object ModelListScreen : Screen {
                         }
                     }
                 )
-            }
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { padding ->
             when {
                 state.isLoading && state.models.isEmpty() -> LoadingView()
-                state.error != null && state.models.isEmpty() -> ErrorView(
+                !state.isLoading && state.models.isEmpty() -> EmptyView()
+                state.error != null -> ErrorView(
                     error = state.error,
                     onRetry = { viewModel.onIntent(ModelListIntent.Retry) }
                 )
@@ -97,7 +98,10 @@ object ModelListScreen : Screen {
         showDeleteDialog?.let { modelName ->
             DeleteConfirmationDialog(
                 modelName = modelName,
-                onConfirm = { viewModel.onIntent(ModelListIntent.ConfirmDelete(modelName)) },
+                onConfirm = {
+                    viewModel.onIntent(ModelListIntent.ConfirmDelete(modelName))
+                    showDeleteDialog = null
+                },
                 onDismiss = { showDeleteDialog = null }
             )
         }
@@ -107,55 +111,6 @@ object ModelListScreen : Screen {
                 model = model,
                 onDismiss = { showDetailsDialog = null }
             )
-        }
-    }
-}
-
-@Composable
-fun ModelGrid(
-    models: List<OllamaModel>,
-    onDelete: (String) -> Unit,
-    onShowDetails: (OllamaModel) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 300.dp),
-        modifier = modifier,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        items(models, key = { it.name }) { model ->
-            ModelCard(
-                model = model,
-                onDelete = onDelete,
-                onShowDetails = onShowDetails
-            )
-        }
-    }
-}
-
-@Composable
-fun LoadingView() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator()
-    }
-}
-
-@Composable
-fun ErrorView(error: String?, onRetry: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Error: $error")
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onRetry) {
-            Text("Retry")
         }
     }
 }

@@ -10,7 +10,7 @@ import androidx.compose.runtime.setValue
 import by.ciszkin.herdmanager.presentation.components.AdaptiveScaffold
 import by.ciszkin.herdmanager.presentation.components.NavigationItem
 import by.ciszkin.herdmanager.presentation.modellist.ModelListScreen
-import by.ciszkin.herdmanager.presentation.root.RegistryScreen
+import by.ciszkin.herdmanager.presentation.registry.RegistryScreen
 import by.ciszkin.herdmanager.presentation.root.RunningScreen
 import by.ciszkin.herdmanager.presentation.root.SettingsScreen
 import cafe.adriel.voyager.navigator.Navigator
@@ -32,7 +32,11 @@ fun App() {
                             SlideTransition(navigator)
                         }
                     }
-                    NavigationItem.Registry.route -> RegistryScreen()
+                    NavigationItem.Registry.route -> {
+                        Navigator(RegistryScreen) { navigator ->
+                            SlideTransition(navigator)
+                        }
+                    }
                     NavigationItem.Running.route -> RunningScreen()
                     NavigationItem.Settings.route -> SettingsScreen()
                 }

@@ -13,7 +13,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 object OllamaApiClient {
-    private const val DEFAULT_BASE_URL = "http://192.168.100.12:11434"
+    private const val DEFAULT_BASE_URL = "http://localhost:11434"
 
     val client = HttpClient(PlatformHttpClientEngine) {
         install(ContentNegotiation) {

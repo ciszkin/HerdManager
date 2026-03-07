@@ -2,9 +2,13 @@ package by.ciszkin.herdmanager.domain.usecase
 
 import by.ciszkin.herdmanager.domain.model.OllamaModel
 import by.ciszkin.herdmanager.domain.repository.OllamaRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class GetModelsUseCase(
     private val repository: OllamaRepository
 ) {
-    suspend operator fun invoke(): Result<List<OllamaModel>> = repository.getModels()
+    suspend operator fun invoke(): Result<List<OllamaModel>> = withContext(Dispatchers.IO) {
+        repository.getModels()
+    }
 }
