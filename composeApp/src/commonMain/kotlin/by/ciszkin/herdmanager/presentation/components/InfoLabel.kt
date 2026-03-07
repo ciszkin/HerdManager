@@ -20,7 +20,7 @@ fun InfoLabel(text: String, modifier: Modifier = Modifier) {
             text = text,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onPrimaryFixedVariant
         )
     }
 }

@@ -1,6 +1,7 @@
 package by.ciszkin.herdmanager.presentation.settings
 
 import by.ciszkin.herdmanager.domain.model.Settings
+import by.ciszkin.herdmanager.domain.model.ThemeMode
 import by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase
 import by.ciszkin.herdmanager.domain.usecase.SaveSettingsUseCase
 import by.ciszkin.herdmanager.presentation.architecture.BaseMviViewModel
@@ -26,6 +27,8 @@ class SettingsViewModel(
             is SettingsIntent.UpdateServerUrl -> updateServerUrl(intent.url)
             is SettingsIntent.UpdateRefreshInterval -> updateRefreshInterval(intent.interval)
             is SettingsIntent.UpdatePollingEnabled -> updatePollingEnabled(intent.enabled)
+            is SettingsIntent.UpdateLanguage -> updateLanguage(intent.language)
+            is SettingsIntent.UpdateThemeMode -> updateThemeMode(intent.themeMode)
             SettingsIntent.ResetToDefaults -> resetToDefaults()
             SettingsIntent.DiscardChanges -> discardChanges()
         }
@@ -66,7 +69,24 @@ class SettingsViewModel(
         }
     }
 
+    private fun updateLanguage(language: String) {
+        currentSettings?.let { current ->
+            val updated = current.copy(language = language)
+            currentSettings = updated
+            reduceState { copy(settings = currentSettings, isDirty = updated != originalSettings) }
+        }
+    }
+
+    private fun updateThemeMode(themeMode: ThemeMode) {
+        currentSettings?.let { current ->
+            val updated = current.copy(themeMode = themeMode)
+            currentSettings = updated
+            reduceState { copy(settings = currentSettings, isDirty = updated != originalSettings) }
+        }
+    }
+
     private fun saveSettings(settings: Settings) {
+        val previousLanguage = originalSettings?.language
         screenModelScope.launch {
             reduceState { copy(isSaving = true, saveError = null) }
             saveSettingsUseCase(settings)
@@ -75,7 +95,9 @@ class SettingsViewModel(
                     originalSettings = settings
                     reduceState { copy(isSaving = false, isDirty = false) }
                     sendEffect(SettingsEffect.SettingsSaved)
-                    sendEffect(SettingsEffect.ShowToast("Settings saved successfully"))
+                    if (previousLanguage != settings.language) {
+                        setLocale(settings.language)
+                    }
                 }
                 .onFailure { error ->
                     reduceState {
@@ -84,7 +106,6 @@ class SettingsViewModel(
                             saveError = error.message
                         )
                     }
-                    sendEffect(SettingsEffect.ShowToast("Failed to save settings"))
                 }
         }
     }
@@ -93,7 +114,9 @@ class SettingsViewModel(
         val defaults = Settings(
             serverUrl = "http://localhost:11434",
             refreshInterval = 5,
-            pollingEnabled = true
+            pollingEnabled = true,
+            language = "en",
+            themeMode = ThemeMode.SYSTEM
         )
         currentSettings = defaults
         reduceState { copy(settings = defaults, isDirty = defaults != originalSettings) }

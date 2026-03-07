@@ -2,9 +2,11 @@ package by.ciszkin.herdmanager.data.repository
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import by.ciszkin.herdmanager.data.local.saveLanguage
 import by.ciszkin.herdmanager.data.local.savePollingEnabled
 import by.ciszkin.herdmanager.data.local.saveRefreshInterval
 import by.ciszkin.herdmanager.data.local.saveServerUrl
+import by.ciszkin.herdmanager.data.local.saveThemeMode
 import by.ciszkin.herdmanager.data.local.settingsFlow
 import by.ciszkin.herdmanager.domain.model.Settings
 import by.ciszkin.herdmanager.domain.repository.SettingsRepository
@@ -14,7 +16,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
@@ -35,7 +36,7 @@ class SettingsRepositoryImpl(
         dataStore.saveServerUrl(settings.serverUrl)
         dataStore.saveRefreshInterval(settings.refreshInterval)
         dataStore.savePollingEnabled(settings.pollingEnabled)
+        dataStore.saveLanguage(settings.language)
+        dataStore.saveThemeMode(settings.themeMode)
     }
-
-    suspend fun getSettings(): Settings = settingsFlow.first()
 }

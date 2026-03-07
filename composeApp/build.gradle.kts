@@ -77,7 +77,7 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
     }
 
     packaging {
@@ -88,7 +88,16 @@ android {
 
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+
+    signingConfigs {
+        create("release") {
         }
     }
 
@@ -108,8 +117,23 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "by.ciszkin.herdmanager"
+            packageName = "herd-manager"
             packageVersion = "1.0.0"
+            description = "AI Model Manager for Ollama"
+            copyright = "© 2026 Herd Manager"
+            vendor = "Herd Manager"
+
+            macOS {
+                bundleID = "by.ciszkin.herdmanager"
+            }
+
+            windows {
+                menuGroup = "AI Tools"
+            }
+
+            linux {
+                shortcut = true
+            }
         }
     }
 }

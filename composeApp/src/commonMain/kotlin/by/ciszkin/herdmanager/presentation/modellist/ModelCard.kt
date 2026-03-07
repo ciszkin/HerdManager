@@ -18,11 +18,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import by.ciszkin.herdmanager.domain.model.OllamaModel
+import by.ciszkin.herdmanager.presentation.components.DetailRow
 import by.ciszkin.herdmanager.utils.formatDate
 import by.ciszkin.herdmanager.utils.formatSize
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.Info
 import compose.icons.feathericons.Trash
+import herdmanager.composeapp.generated.resources.Res
+import herdmanager.composeapp.generated.resources.delete_model
+import herdmanager.composeapp.generated.resources.modified
+import herdmanager.composeapp.generated.resources.show_details
+import herdmanager.composeapp.generated.resources.size
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ModelCard(
@@ -47,23 +54,17 @@ fun ModelCard(
                 )
                 Row {
                     IconButton(onClick = { onShowDetails(model) }) {
-                        Icon(FeatherIcons.Info, contentDescription = "Show Details")
+                        Icon(FeatherIcons.Info, contentDescription = stringResource(Res.string.show_details))
                     }
                     IconButton(onClick = { onDelete(model.name) }) {
-                        Icon(FeatherIcons.Trash, contentDescription = "Delete Model")
+                        Icon(FeatherIcons.Trash, contentDescription = stringResource(Res.string.delete_model))
                     }
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Size: ${formatSize(model.size)}",
-                style = MaterialTheme.typography.bodyMedium
-            )
+            DetailRow(stringResource(Res.string.size), formatSize(model.size))
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Modified: ${formatDate(model.modifiedAt)}",
-                style = MaterialTheme.typography.bodySmall
-            )
+            DetailRow(stringResource(Res.string.modified), formatDate(model.modifiedAt))
         }
     }
 }

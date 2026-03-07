@@ -15,6 +15,10 @@ import androidx.compose.ui.unit.dp
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.X
 import compose.icons.feathericons.Search
+import herdmanager.composeapp.generated.resources.Res
+import herdmanager.composeapp.generated.resources.clear_search
+import herdmanager.composeapp.generated.resources.search
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SearchBar(
@@ -27,7 +31,7 @@ fun SearchBar(
     OutlinedTextField(
         value = query,
         onValueChange = { onQueryChange(it) },
-        placeholder = { Text("Search models...") },
+        placeholder = { Text(stringResource(Res.string.search)) },
         leadingIcon = {
             Icon(
                 imageVector = FeatherIcons.Search,
@@ -45,7 +49,7 @@ fun SearchBar(
                     IconButton(onClick = onClear) {
                         Icon(
                             imageVector = FeatherIcons.X,
-                            contentDescription = "Clear search"
+                            contentDescription = stringResource(Res.string.clear_search)
                         )
                     }
                 }

@@ -21,6 +21,8 @@ data class ModelListState(
 ) : MviState
 
 sealed interface ModelListEffect : MviEffect {
+    data object ShowModelDeletionSuccess : ModelListEffect
+    data object ShowModelDeletionFailure : ModelListEffect
     data class ShowToast(val message: String) : ModelListEffect
     data class ShowDeleteConfirmation(val modelName: String) : ModelListEffect
 }

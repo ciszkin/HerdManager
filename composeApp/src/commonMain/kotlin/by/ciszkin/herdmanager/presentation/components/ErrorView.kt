@@ -13,9 +13,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import herdmanager.composeapp.generated.resources.Res
+import herdmanager.composeapp.generated.resources.error
+import herdmanager.composeapp.generated.resources.retry
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ErrorView(error: String?, onRetry: () -> Unit) {
+    error ?: return
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -25,12 +30,12 @@ fun ErrorView(error: String?, onRetry: () -> Unit) {
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Error: $error",
+                text = stringResource(Res.string.error, error),
                 style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = onRetry) {
-                Text("Retry")
+                Text(stringResource(Res.string.retry))
             }
         }
     }

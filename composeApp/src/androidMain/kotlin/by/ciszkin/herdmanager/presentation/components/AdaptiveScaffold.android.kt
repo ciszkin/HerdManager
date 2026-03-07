@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -13,23 +14,26 @@ import androidx.compose.ui.Modifier
 actual fun AdaptiveScaffold(
     selectedRoute: String,
     onRouteSelected: (String) -> Unit,
+    language: String,
     content: @Composable (Modifier) -> Unit
 ) {
     Scaffold(
         topBar = {},
         bottomBar = {
             NavigationBar {
-                NavigationItem.entries.forEach { item ->
-                    NavigationBarItem(
-                        selected = selectedRoute == item.route,
-                        onClick = { onRouteSelected(item.route) },
-                        icon = {
-                            Icon(imageVector = item.icon, contentDescription = item.label)
-                        },
-                        label = {
-                            Text(item.label)
-                        }
-                    )
+                key(language) {
+                    NavigationItem.entries.forEach { item ->
+                        NavigationBarItem(
+                            selected = selectedRoute == item.route,
+                            onClick = { onRouteSelected(item.route) },
+                            icon = {
+                                Icon(imageVector = item.icon, contentDescription = item.getLabel())
+                            },
+                            label = {
+                                Text(item.getLabel())
+                            }
+                        )
+                    }
                 }
             }
         },

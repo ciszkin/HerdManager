@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Herd Manager</string>
+
+    <string name="nav_models">Мадэлі</string>
+    <string name="nav_registry">Рэестр</string>
+    <string name="nav_running">Запушчаныя</string>
+    <string name="nav_settings">Налады</string>
+
+    <string name="local_models">Лакальныя мадэлі</string>
+    <string name="refresh">Аднавіць</string>
+    <string name="delete">Выдаліць</string>
+    <string name="info">Інфармацыя</string>
+    <string name="confirm_delete">Пацвердзіць выдаленне</string>
+    <string name ="delete_dialog_message">Ці ўпэўнены вы што хочаце выдаліць %1$s? Гэтае дзеянне немагчыма адмяніць.</string>
+    <string name="empty_models">Мадэлі не знойдзены</string>
+    <string name="empty_models_description">Сцягніце мадэлі з рэестра, каб пачаць</string>
+    <string name="error_loading">Не ўдалося загрузіць мадэлі</string>
+    <string name="model_deleted">Мадэль паспяхова выдалена</string>
+    <string name="delete_failed">Не ўдалося выдаліць мадэль</string>
+    <string name="show_details">Паказаць падрабязнасці</string>
+    <string name="delete_model">Выдаліць мадэль</string>
+
+    <string name="model_details">Падрабязнасці мадэлі</string>
+    <string name="additional_details">Дадатковыя падрабязнасці</string>
+    <string name="name">Назва: </string>
+    <string name="model">Мадэль: </string>
+    <string name="size">Памер: </string>
+    <string name="modified">Зменена: </string>
+    <string name="digest">Хэш: </string>
+    <string name="format">Фармат: </string>
+    <string name="family">Сямейства: </string>
+    <string name="families">Сямействы: </string>
+    <string name="parameter_size">Памер параметраў: </string>
+    <string name="quantization">Квантаванне: </string>
+    <string name="parent_model">Бацькоўская мадэль: </string>
+
+    <string name="registry">Рэестр</string>
+    <string name="search">Пошук мадэляў...</string>
+    <string name="clear_search">Ачысціць</string>
+    <string name="pull">Сцягнуць мадэль</string>
+    <string name="select_size">Выберыце памер:</string>
+    <string name="ready_to_pull">Гатова да сцягвання %1$s:%2$s</string>
+    <string name="starting">Пачынаю...</string>
+    <string name="pulling">Сцягванне %1$s...</string>
+    <string name="successfully_pulled">Паспяхова сцягнута %1$s:%2$s</string>
+    <string name="pull_progress">Прагрэс сцягвання</string>
+    <string name="pull_cancel">Скасаваць</string>
+    <string name="pull_complete">Сцягванне завершана</string>
+    <string name="pull_failed">Памылка сцягвання</string>
+    <string name="empty_registry">Мадэлі не знойдзены</string>
+    <string name="pull_count">Сцягванняў: %1$s</string>
+    <string name="tags_more">+%1$d яшчэ</string>
+
+    <string name="running_models">Запушчаныя мадэлі</string>
+    <string name="empty_running">Няма запушчаных мадэляў</string>
+    <string name="empty_running_description">Загружаныя мадэлі з'явяцца тут</string>
+    <string name="error_running">Не ўдалося загрузіць запушчаныя мадэлі</string>
+    <string name="memory_usage">Памяць</string>
+    <string name="vram_usage">VRAM</string>
+
+    <string name="settings">Налады</string>
+    <string name="server_config">Канфігурацыя сервера</string>
+    <string name="server_url">URL сервера</string>
+    <string name="server_url_placeholder">http://localhost:11434</string>
+    <string name="polling_settings">Налады апытання</string>
+    <string name="refresh_interval">Інтэрвал абнаўлення</string>
+    <string name="refresh_interval_seconds">%d секунд</string>
+    <string name="polling_enabled">Уключыць апытанне</string>
+    <string name="save_settings">Захаваць налады</string>
+    <string name="discard">Адхіліць</string>
+    <string name="reset_defaults">Скінуць па змаўчанні</string>
+    <string name="settings_saved">Налады паспяхова захаваны</string>
+    <string name="settings_save_failed">Не ўдалося захаваць налады</string>
+
+    <string name="language">Мова</string>
+    <string name="language_english">English</string>
+    <string name="language_belarusian">Беларуская</string>
+
+    <string name="theme">Тэма</string>
+    <string name="theme_mode_light">Светлая</string>
+    <string name="theme_mode_dark">Цёмная</string>
+    <string name="theme_mode_system">Сістэмная</string>
+
+    <string name="loading">Загрузка...</string>
+    <string name="error">Памылка</string>
+    <string name="retry">Паўтарыць</string>
+    <string name="cancel">Скасаваць</string>
+    <string name="close">Закрыць</string>
+    <string name="confirm">Пацвердзіць</string>
+    <string name="success">Паспяхова</string>
+</resources>

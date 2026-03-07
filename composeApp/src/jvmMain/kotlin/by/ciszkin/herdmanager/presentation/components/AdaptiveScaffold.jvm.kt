@@ -8,35 +8,40 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 actual fun AdaptiveScaffold(
     selectedRoute: String,
     onRouteSelected: (String) -> Unit,
+    language: String,
     content: @Composable (Modifier) -> Unit
 ) {
     PermanentNavigationDrawer(
         drawerContent = {
-            Column(
-                modifier = Modifier
-                    .wrapContentWidth()
-                    .padding(horizontal = 8.dp)
-            ) {
-                NavigationItem.entries.forEach { item ->
-                    NavigationRailItem(
-                        modifier = Modifier.padding(top = 8.dp),
-                        selected = selectedRoute == item.route,
-                        onClick = { onRouteSelected(item.route) },
-                        icon = {
-                            Icon(imageVector = item.icon, contentDescription = item.label)
-                        },
-                        label = {
-                            Text(item.label)
-                        }
-                    )
+            key(language) {
+                Column(
+                    modifier = Modifier
+                        .wrapContentWidth()
+                        .padding(horizontal = 8.dp)
+                ) {
+                    NavigationItem.entries.forEach { item ->
+                        NavigationRailItem(
+                            modifier = Modifier.padding(top = 8.dp),
+                            selected = selectedRoute == item.route,
+                            onClick = { onRouteSelected(item.route) },
+                            icon = {
+                                Icon(imageVector = item.icon, contentDescription = item.getLabel())
+                            },
+                            label = {
+                                Text(item.getLabel())
+                            }
+                        )
+                    }
                 }
             }
         }

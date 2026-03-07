@@ -127,11 +127,11 @@ class RegistryViewModel(
                     reduceState {
                         copy(
                             pullResult = PullResult.Error(
-                                error.message ?: "Pull failed"
+                                error.message ?: error.localizedMessage
                             )
                         )
                     }
-                    sendEffect(RegistryEffect.ShowToast(error.message ?: "Pull failed"))
+                    sendEffect(RegistryEffect.ShowToast(error.message ?: error.localizedMessage))
                 }
                 .collect { result ->
                     if (result is PullResult.Error) {

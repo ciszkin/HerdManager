@@ -26,6 +26,11 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.RefreshCw
+import herdmanager.composeapp.generated.resources.Res
+import herdmanager.composeapp.generated.resources.empty_running
+import herdmanager.composeapp.generated.resources.refresh
+import herdmanager.composeapp.generated.resources.running_models
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 object RunningScreen : Screen {
@@ -68,14 +73,14 @@ object RunningScreen : Screen {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Running Models") },
+                    title = { Text(stringResource(Res.string.running_models)) },
                     actions = {
                         IconButton(onClick = {
                             viewModel.onIntent(RunningIntent.Refresh)
                         }) {
                             Icon(
                                 imageVector = FeatherIcons.RefreshCw,
-                                contentDescription = "Refresh",
+                                contentDescription = stringResource(Res.string.refresh),
                                 tint = if (state.pollingEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.rotate(rotation.value)
                             )
@@ -86,7 +91,9 @@ object RunningScreen : Screen {
         ) { padding ->
             when {
                 state.isLoading && state.models.isEmpty() -> LoadingView()
-                !state.isLoading && state.models.isEmpty() -> EmptyView()
+                !state.isLoading && state.models.isEmpty() -> EmptyView(
+                    stringResource(Res.string.empty_running)
+                )
                 state.error != null -> ErrorView(
                     error = state.error,
                     onRetry = { viewModel.onIntent(RunningIntent.Refresh) }

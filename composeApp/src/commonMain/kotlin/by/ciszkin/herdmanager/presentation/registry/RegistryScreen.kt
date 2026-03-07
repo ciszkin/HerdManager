@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import by.ciszkin.herdmanager.presentation.components.VerticalScrollbarWithStyle
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,6 +39,11 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.RefreshCw
+import herdmanager.composeapp.generated.resources.Res
+import herdmanager.composeapp.generated.resources.empty_registry
+import herdmanager.composeapp.generated.resources.refresh
+import herdmanager.composeapp.generated.resources.registry
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,10 +110,10 @@ object RegistryScreen : Screen {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Model Registry") },
+                    title = { Text(stringResource(Res.string.registry)) },
                     actions = {
                         IconButton(onClick = { viewModel.onIntent(RegistryIntent.Retry) }) {
-                            Icon(FeatherIcons.RefreshCw, "Refresh")
+                            Icon(FeatherIcons.RefreshCw, stringResource(Res.string.refresh))
                         }
                     }
                 )
@@ -126,7 +132,9 @@ object RegistryScreen : Screen {
                 )
                 when {
                     state.isLoading -> LoadingView()
-                    !state.isLoading && state.models.isEmpty() -> EmptyView()
+                    !state.isLoading && state.models.isEmpty() -> EmptyView(
+                        stringResource(Res.string.empty_registry)
+                    )
                     state.error != null -> ErrorView(
                         error = state.error,
                         onRetry = { viewModel.onIntent(RegistryIntent.Retry) }
@@ -165,6 +173,10 @@ object RegistryScreen : Screen {
                                     }
                                 }
                             }
+                            VerticalScrollbarWithStyle(
+                                gridState = gridState,
+                                modifier = Modifier.align(Alignment.CenterEnd)
+                            )
                         }
                     }
                 }

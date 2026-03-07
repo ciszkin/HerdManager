@@ -8,4 +8,6 @@ object PreferencesKeys {
     val SERVER_URL = stringPreferencesKey("server_url")
     val REFRESH_INTERVAL = longPreferencesKey("refresh_interval")
     val POLLING_ENABLED = booleanPreferencesKey("polling_enabled")
+    val LANGUAGE = stringPreferencesKey("language")
+    val THEME_MODE = stringPreferencesKey("theme_mode")
 }

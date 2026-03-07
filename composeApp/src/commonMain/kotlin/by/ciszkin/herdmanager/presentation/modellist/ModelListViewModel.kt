@@ -41,10 +41,10 @@ class ModelListViewModel(
             deleteModelUseCase(modelName)
                 .onSuccess {
                     loadModels()
-                    sendEffect(ModelListEffect.ShowToast("Model deleted successfully"))
+                    sendEffect(ModelListEffect.ShowModelDeletionSuccess)
                 }
-                .onFailure { error ->
-                    sendEffect(ModelListEffect.ShowToast("Failed to delete: ${error.message}"))
+                .onFailure {
+                    sendEffect(ModelListEffect.ShowModelDeletionFailure)
                 }
             reduceState { copy(isDeleting = false, modelToDelete = null) }
         }

@@ -26,6 +26,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import by.ciszkin.herdmanager.domain.model.PullResult
+import herdmanager.composeapp.generated.resources.Res
+import herdmanager.composeapp.generated.resources.pull
+import herdmanager.composeapp.generated.resources.cancel
+import herdmanager.composeapp.generated.resources.close
+import herdmanager.composeapp.generated.resources.digest
+import herdmanager.composeapp.generated.resources.pull_complete
+import herdmanager.composeapp.generated.resources.pull_failed
+import herdmanager.composeapp.generated.resources.pulling
+import herdmanager.composeapp.generated.resources.ready_to_pull
+import herdmanager.composeapp.generated.resources.select_size
+import herdmanager.composeapp.generated.resources.size
+import herdmanager.composeapp.generated.resources.starting
+import herdmanager.composeapp.generated.resources.successfully_pulled
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,11 +61,11 @@ fun PullModelDialog(
         title = {
             Text(
                 text = when (pullResult) {
-                    null -> "Pull Model"
-                    PullResult.Starting -> "Pulling $modelName"
-                    is PullResult.Progress -> "Pulling $modelName"
-                    PullResult.Completed -> "Pull Complete"
-                    is PullResult.Error -> "Pull Failed"
+                    null -> stringResource(Res.string.pull)
+                    PullResult.Starting -> stringResource(Res.string.pulling, modelName)
+                    is PullResult.Progress -> stringResource(Res.string.pulling, modelName)
+                    PullResult.Completed -> stringResource(Res.string.pull_complete)
+                    is PullResult.Error -> stringResource(Res.string.pull_failed)
                 }
             )
         },
@@ -66,7 +80,7 @@ fun PullModelDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Select size:",
+                    text = stringResource(Res.string.select_size),
                     style = MaterialTheme.typography.labelLarge
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -80,7 +94,7 @@ fun PullModelDialog(
                         value = selectedTag ?: "",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Size") },
+                        label = { Text(stringResource(Res.string.size)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier
                             .menuAnchor()
@@ -108,7 +122,7 @@ fun PullModelDialog(
                     null -> {
                         if (selectedTag != null) {
                             Text(
-                                text = "Ready to pull ${modelName}:${selectedTag}",
+                                text = stringResource(Res.string.ready_to_pull, modelName, selectedTag),
                                 style = MaterialTheme.typography.bodySmall,
                                 textAlign = TextAlign.Center
                             )
@@ -120,7 +134,7 @@ fun PullModelDialog(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Starting...",
+                            text = stringResource(Res.string.starting),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -174,7 +188,7 @@ fun PullModelDialog(
                                 currentProgress.digest?.let { digest ->
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "Digest: ${digest.take(16)}...",
+                                        text = stringResource(Res.string.digest) + digest.take(16) + "...",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -184,7 +198,7 @@ fun PullModelDialog(
                     }
                     PullResult.Completed -> {
                         Text(
-                            text = "Successfully pulled $modelName${selectedTag?.let { ":$it" } ?: ""}",
+                            text = stringResource(Res.string.successfully_pulled, modelName, selectedTag ?: ""),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.primary
@@ -208,17 +222,17 @@ fun PullModelDialog(
                         onClick = onPull,
                         enabled = selectedTag != null || !hasTags
                     ) {
-                        Text("Pull")
+                        Text(stringResource(Res.string.pull))
                     }
                 }
                 PullResult.Starting, is PullResult.Progress -> {
                     Button(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text(stringResource(Res.string.cancel))
                     }
                 }
                 else -> {
                     TextButton(onClick = onDismiss) {
-                        Text("Close")
+                        Text(stringResource(Res.string.close))
                     }
                 }
             }

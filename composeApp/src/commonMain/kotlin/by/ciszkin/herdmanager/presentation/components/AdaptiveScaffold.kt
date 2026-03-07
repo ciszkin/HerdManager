@@ -7,5 +7,6 @@ import androidx.compose.ui.Modifier
 expect fun AdaptiveScaffold(
     selectedRoute: String,
     onRouteSelected: (String) -> Unit,
+    language: String,
     content: @Composable (Modifier) -> Unit
 )

@@ -27,6 +27,13 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.RefreshCw
+import herdmanager.composeapp.generated.resources.Res
+import herdmanager.composeapp.generated.resources.delete_failed
+import herdmanager.composeapp.generated.resources.empty_models
+import herdmanager.composeapp.generated.resources.local_models
+import herdmanager.composeapp.generated.resources.model_deleted
+import herdmanager.composeapp.generated.resources.refresh
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,6 +53,8 @@ object ModelListScreen : Screen {
         val coroutineScope = rememberCoroutineScope()
         var showDeleteDialog by remember { mutableStateOf<String?>(null) }
         var showDetailsDialog by remember { mutableStateOf<OllamaModel?>(null) }
+        val modelDeletionSuccessMessage = stringResource(Res.string.model_deleted)
+        val modelDeletionFailureMessage = stringResource(Res.string.delete_failed)
 
         LaunchedEffect(Unit) {
             viewModel.onIntent(ModelListIntent.Refresh)
@@ -62,6 +71,16 @@ object ModelListScreen : Screen {
                     is ModelListEffect.ShowDeleteConfirmation -> {
                         showDeleteDialog = effect.modelName
                     }
+                    is ModelListEffect.ShowModelDeletionSuccess -> {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(modelDeletionSuccessMessage)
+                        }
+                    }
+                    is ModelListEffect.ShowModelDeletionFailure -> {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(modelDeletionFailureMessage)
+                        }
+                    }
                 }
             }
         }
@@ -69,10 +88,10 @@ object ModelListScreen : Screen {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Local Models") },
+                    title = { Text(stringResource(Res.string.local_models)) },
                     actions = {
                         IconButton(onClick = { viewModel.onIntent(ModelListIntent.Refresh) }) {
-                            Icon(FeatherIcons.RefreshCw, "Refresh")
+                            Icon(FeatherIcons.RefreshCw, stringResource(Res.string.refresh))
                         }
                     }
                 )
@@ -81,7 +100,9 @@ object ModelListScreen : Screen {
         ) { padding ->
             when {
                 state.isLoading && state.models.isEmpty() -> LoadingView()
-                !state.isLoading && state.models.isEmpty() -> EmptyView()
+                !state.isLoading && state.models.isEmpty() -> EmptyView(
+                    stringResource(Res.string.empty_models)
+                )
                 state.error != null -> ErrorView(
                     error = state.error,
                     onRetry = { viewModel.onIntent(ModelListIntent.Retry) }

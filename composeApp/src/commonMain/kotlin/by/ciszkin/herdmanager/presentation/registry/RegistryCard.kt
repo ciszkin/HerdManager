@@ -19,6 +19,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import by.ciszkin.herdmanager.domain.model.RegistryModel
 import by.ciszkin.herdmanager.presentation.components.InfoLabel
+import herdmanager.composeapp.generated.resources.Res
+import herdmanager.composeapp.generated.resources.pull
+import herdmanager.composeapp.generated.resources.pull_count
+import herdmanager.composeapp.generated.resources.tags_more
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun RegistryCard(
@@ -62,13 +67,8 @@ fun RegistryCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = formatPullCount(model.pullCount),
+                        text = stringResource(Res.string.pull_count, formatPullCount(model.pullCount)),
                         style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = "pulls",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -83,7 +83,7 @@ fun RegistryCard(
                     }
                     if (model.tags.size > 3) {
                         Text(
-                            text = "+${model.tags.size - 3} more",
+                            text = stringResource(Res.string.tags_more,model.tags.size - 3),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -95,7 +95,7 @@ fun RegistryCard(
                 onClick = { onPull(model) },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Pull")
+                Text(stringResource(Res.string.pull))
             }
         }
     }

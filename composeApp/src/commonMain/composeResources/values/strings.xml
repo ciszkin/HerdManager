@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Herd Manager</string>
+
+    <string name="nav_models">Models</string>
+    <string name="nav_registry">Registry</string>
+    <string name="nav_running">Running</string>
+    <string name="nav_settings">Settings</string>
+
+    <string name="local_models">Local Models</string>
+    <string name="refresh">Refresh</string>
+    <string name="delete">Delete</string>
+    <string name="info">Info</string>
+    <string name="confirm_delete">Confirm Delete</string>
+    <string name ="delete_dialog_message">Are you sure you want to delete %1$s? This action cannot be undone.</string>
+    <string name="empty_models">No models found</string>
+    <string name="empty_models_description">Pull models from the registry to get started</string>
+    <string name="error_loading">Failed to load models</string>
+    <string name="model_deleted">Model deleted successfully</string>
+    <string name="delete_failed">Failed to delete model</string>
+    <string name="show_details">Show Details</string>
+    <string name="delete_model">Delete Model</string>
+
+    <string name="model_details">Model Details</string>
+    <string name="additional_details">Additional Details</string>
+    <string name="name">Name: </string>
+    <string name="model">Model: </string>
+    <string name="size">Size: </string>
+    <string name="modified">Modified: </string>
+    <string name="digest">Digest: </string>
+    <string name="format">Format: </string>
+    <string name="family">Family: </string>
+    <string name="families">Families: </string>
+    <string name="parameter_size">Parameter Size: </string>
+    <string name="quantization">Quantization Level: </string>
+    <string name="parent_model">Parent Model: </string>
+
+    <string name="registry">Registry</string>
+    <string name="search">Search models...</string>
+    <string name="clear_search">Clear</string>
+    <string name="pull">Pull Model</string>
+    <string name="select_size">Select size:</string>
+    <string name="ready_to_pull">Ready to pull %1$s:%2$s</string>
+    <string name="starting">Starting...</string>
+    <string name="pulling">Pulling %1$s...</string>
+    <string name="successfully_pulled">Successfully pulled %1$s:%2$s</string>
+    <string name="pull_progress">Pull Progress</string>
+    <string name="pull_cancel">Cancel</string>
+    <string name="pull_complete">Pull complete</string>
+    <string name="pull_failed">Pull failed</string>
+    <string name="empty_registry">No models found</string>
+    <string name="pull_count">Pulls: %1$s</string>
+    <string name="tags_more">+%1$d more</string>
+
+    <string name="running_models">Running Models</string>
+    <string name="empty_running">No models running</string>
+    <string name="empty_running_description">Loaded models will appear here</string>
+    <string name="error_running">Failed to load running models</string>
+    <string name="memory_usage">Memory</string>
+    <string name="vram_usage">VRAM</string>
+
+    <string name="settings">Settings</string>
+    <string name="server_config">Server Configuration</string>
+    <string name="server_url">Server URL</string>
+    <string name="server_url_placeholder">http://localhost:11434</string>
+    <string name="polling_settings">Polling Settings</string>
+    <string name="refresh_interval">Refresh Interval</string>
+    <string name="refresh_interval_seconds">%d seconds</string>
+    <string name="polling_enabled">Enable Polling</string>
+    <string name="save_settings">Save Settings</string>
+    <string name="discard">Discard</string>
+    <string name="reset_defaults">Reset to Defaults</string>
+    <string name="settings_saved">Settings saved successfully</string>
+    <string name="settings_save_failed">Failed to save settings</string>
+    <string name="reset_to_defaults">Reset to defaults</string>
+
+    <string name="language">Language</string>
+    <string name="language_english">English</string>
+    <string name="language_belarusian">Belarusian</string>
+
+    <string name="theme">Theme</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
+    <string name="theme_mode_system">System Default</string>
+
+    <string name="loading">Loading...</string>
+    <string name="error">Error: %1$s</string>
+    <string name="retry">Retry</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="confirm">Confirm</string>
+    <string name="success">Success</string>
+</resources>
