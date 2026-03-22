@@ -22,6 +22,9 @@ kotlinx-serialization = "1.7.3"
 # Coroutines
 kotlinx-coroutines = "1.9.0"
 
+# Icons
+feather-icons = "1.1.1"
+
 # Testing
 kotlin-test = "2.3.0"
 
@@ -77,6 +80,9 @@ jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+
+# --- Icons ---
+feather-icons = { module = "br.com.devsrsouza.compose.icons:feather", version.ref = "feather-icons" }
 
 # --- Testing ---
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin-test" }
