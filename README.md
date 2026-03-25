@@ -1,40 +1,46 @@
-This is a Kotlin Multiplatform project targeting Android, Desktop (JVM).
+# HerdManager
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+A cross-platform application for managing local AI/LLM models. Built with Kotlin Multiplatform and Compose, targeting Android and Desktop (JVM) with a shared codebase.
 
-### Build and Run Android Application
+HerdManager connects to your local Ollama server, allowing you to browse and pull models from the ollama.com registry, view and manage downloaded models, and monitor running models. Features include real-time model status, configurable polling intervals, and persistent settings. The app follows clean MVI architecture with platform-specific optimizations for both Android and Desktop experiences.
 
-To build and run the development version of the Android app, use the run configuration from the run widget
-in your IDE’s toolbar or build it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:assembleDebug
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:assembleDebug
-  ```
+## Features
 
-### Build and Run Desktop (JVM) Application
+- **Local Models Management:** View, delete, and inspect downloaded models with detailed information including size, quantization level, family, and modification date
+- **Model Registry:** Browse and pull models from ollama.com/library with search functionality, capabilities display, and pull counts for popularity reference
+- **Running Models:** Monitor currently loaded models in real-time with status, memory usage, VRAM consumption, and auto-refresh polling
+- **Configurable Settings:** Customize server URL connection, polling intervals (1-60 seconds), and enable/disable auto-refresh functionality
+- **Cross-Platform:** Native Android and Desktop (JVM) applications with shared codebase, adaptive navigation (bottom bar for mobile, side rail for desktop), and platform-specific optimizations
 
-To build and run the development version of the desktop app, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:run
-  ```
+## Quick Start
 
----
+### Android
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+Build the debug APK:
+```bash
+./gradlew :composeApp:assembleDebug
+```
+
+Use the run configuration from your IDE's toolbar to run the app directly.
+
+### Desktop (JVM)
+
+Run the desktop application:
+```bash
+./gradlew :composeApp:run
+```
+
+Or use the run configuration from your IDE's toolbar.
+
+## Project Structure
+
+The codebase follows a multiplatform structure:
+
+- `commonMain/kotlin` - Shared code used across all platforms (Android, Desktop)
+- `androidMain/kotlin` - Android-specific implementations and configurations
+- `jvmMain/kotlin` - Desktop/JVM-specific implementations and configurations
+
+## Learn More
+
+- [Kotlin Multiplatform Documentation](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)
+- [Ollama Documentation](https://github.com/ollama/ollama)
