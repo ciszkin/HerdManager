@@ -19,7 +19,8 @@ fun SettingsTextField(
     modifier: Modifier = Modifier,
     placeholder: String? = null,
     error: String? = null,
-    keyboardType: KeyboardType = KeyboardType.Text
+    keyboardType: KeyboardType = KeyboardType.Text,
+    readOnly: Boolean = false
 ) {
     OutlinedTextField(
         value = value,
@@ -30,8 +31,10 @@ fun SettingsTextField(
         supportingText = error?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         singleLine = true,
+        readOnly = readOnly,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 16.dp)
+            .padding(top = 8.dp)
     )
 }

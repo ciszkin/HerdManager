@@ -2,6 +2,7 @@ package by.ciszkin.herdmanager.data.api
 
 import by.ciszkin.herdmanager.domain.model.OllamaModel
 import by.ciszkin.herdmanager.domain.model.OllamaModelsResponse
+import by.ciszkin.herdmanager.domain.model.OllamaVersion
 import by.ciszkin.herdmanager.domain.model.PullProgress
 import by.ciszkin.herdmanager.domain.model.RunningModel
 import by.ciszkin.herdmanager.domain.model.RunningModelsResponse
@@ -37,6 +38,9 @@ class OllamaApiService(private val client: HttpClient) {
 
     suspend fun getRunningModels(): List<RunningModel> =
         client.get("/api/ps").body<RunningModelsResponse>().models
+
+    suspend fun getVersion(): String =
+        client.get("/api/version").body<OllamaVersion>().version
 
     suspend fun deleteModel(name: String) = client.delete("/api/delete") {
         setBody(DeleteRequest(model = name))

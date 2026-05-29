@@ -47,3 +47,23 @@ suspend fun DataStore<Preferences>.saveThemeMode(themeMode: ThemeMode) {
         preferences[PreferencesKeys.THEME_MODE] = themeMode.value
     }
 }
+
+suspend fun DataStore<Preferences>.saveCurrentVersion(version: String) {
+    edit { preferences ->
+        preferences[PreferencesKeys.OLLAMA_CURRENT_VERSION] = version
+    }
+}
+
+suspend fun DataStore<Preferences>.saveLatestVersion(version: String) {
+    edit { preferences ->
+        preferences[PreferencesKeys.OLLAMA_LATEST_VERSION] = version
+    }
+}
+
+fun DataStore<Preferences>.currentVersionFlow(): Flow<String?> = this.data.map { preferences ->
+    preferences[PreferencesKeys.OLLAMA_CURRENT_VERSION]
+}
+
+fun DataStore<Preferences>.latestVersionFlow(): Flow<String?> = this.data.map { preferences ->
+    preferences[PreferencesKeys.OLLAMA_LATEST_VERSION]
+}

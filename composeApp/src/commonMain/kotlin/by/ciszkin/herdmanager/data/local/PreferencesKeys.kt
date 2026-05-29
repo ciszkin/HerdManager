@@ -10,4 +10,6 @@ object PreferencesKeys {
     val POLLING_ENABLED = booleanPreferencesKey("polling_enabled")
     val LANGUAGE = stringPreferencesKey("language")
     val THEME_MODE = stringPreferencesKey("theme_mode")
+    val OLLAMA_CURRENT_VERSION = stringPreferencesKey("ollama_current_version")
+    val OLLAMA_LATEST_VERSION = stringPreferencesKey("ollama_latest_version")
 }

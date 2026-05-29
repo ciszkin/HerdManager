@@ -61,6 +61,7 @@
 
     <string name="settings">Налады</string>
     <string name="server_config">Канфігурацыя сервера</string>
+    <string name="ollama_version">Версія Ollama</string>
     <string name="server_url">URL сервера</string>
     <string name="server_url_placeholder">http://localhost:11434</string>
     <string name="polling_settings">Налады апытання</string>
@@ -74,8 +75,13 @@
     <string name="settings_save_failed">Не ўдалося захаваць налады</string>
 
     <string name="language">Мова</string>
+    <string name="appearance">Выгляд</string>
     <string name="language_english">English</string>
     <string name="language_belarusian">Беларуская</string>
+    <string name="update_available">Даступна абнаўленне: Ollama %1$s (у вас %2$s)</string>
+    <string name="get_update">Атрымаць</string>
+    <string name="current_version">Бягучая версія</string>
+    <string name="latest_version">Апошняя версія</string>
 
     <string name="theme">Тэма</string>
     <string name="theme_mode_light">Светлая</string>

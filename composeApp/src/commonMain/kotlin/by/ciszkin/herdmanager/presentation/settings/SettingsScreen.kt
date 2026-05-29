@@ -11,16 +11,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -32,25 +26,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import by.ciszkin.herdmanager.di.AppModule
 import by.ciszkin.herdmanager.domain.model.ThemeMode
+import by.ciszkin.herdmanager.presentation.components.UpdateBanner
+import by.ciszkin.herdmanager.util.openUrl
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.Check
+import compose.icons.feathericons.Globe
 import compose.icons.feathericons.RotateCcw
 import compose.icons.feathericons.X
 import herdmanager.composeapp.generated.resources.Res
+import herdmanager.composeapp.generated.resources.appearance
 import herdmanager.composeapp.generated.resources.discard
 import herdmanager.composeapp.generated.resources.language
+import herdmanager.composeapp.generated.resources.ollama_version
 import herdmanager.composeapp.generated.resources.polling_enabled
 import herdmanager.composeapp.generated.resources.polling_settings
 import herdmanager.composeapp.generated.resources.refresh_interval
@@ -65,7 +62,6 @@ import herdmanager.composeapp.generated.resources.settings_saved
 import herdmanager.composeapp.generated.resources.theme
 import org.jetbrains.compose.resources.stringResource
 
-@OptIn(ExperimentalMaterial3Api::class)
 object SettingsScreen : Screen {
     private fun readResolve(): Any = SettingsScreen
 
@@ -74,7 +70,8 @@ object SettingsScreen : Screen {
         val viewModel = rememberScreenModel {
             SettingsViewModel(
                 observeSettingsUseCase = AppModule.observeSettingsUseCase,
-                saveSettingsUseCase = AppModule.saveSettingsUseCase
+                saveSettingsUseCase = AppModule.saveSettingsUseCase,
+                checkForOllamaUpdateUseCase = AppModule.checkForOllamaUpdateUseCase
             )
         }
         val state by viewModel.state.collectAsState()
@@ -124,11 +121,33 @@ object SettingsScreen : Screen {
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
+                // Show update banner if update is available
+                val currentVersion = state.currentVersion
+                val latestVersion = state.latestVersion
+                if (state.isNewVersionAvailable && currentVersion != null && latestVersion != null) {
+                    UpdateBanner(
+                        currentVersion = currentVersion,
+                        latestVersion = latestVersion,
+                        onOpenRelease = {
+                            state.releaseUrl?.let { url -> openUrl(url) }
+                        },
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                }
                 Text(
                     text = stringResource(Res.string.server_config),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
+
+                currentVersion?.let { version ->
+                    SettingsTextField(
+                        label = stringResource(Res.string.ollama_version),
+                        value = version,
+                        onValueChange = {},
+                        readOnly = true
+                    )
+                }
 
                 state.settings?.let { settings ->
                     SettingsTextField(
@@ -147,18 +166,10 @@ object SettingsScreen : Screen {
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
-                    SettingsSlider(
-                        label = stringResource(Res.string.refresh_interval),
-                        value = settings.refreshInterval,
-                        onValueChange = { viewModel.onIntent(SettingsIntent.UpdateRefreshInterval(it)) },
-                        valueRange = 1f..60f,
-                        valueLabel = stringResource(Res.string.refresh_interval_seconds).format(settings.refreshInterval)
-                    )
-
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 16.dp),
+                            .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -172,87 +183,44 @@ object SettingsScreen : Screen {
                         )
                     }
 
+                    if (settings.pollingEnabled) {
+                        SettingsSlider(
+                            label = stringResource(Res.string.refresh_interval),
+                            value = settings.refreshInterval,
+                            onValueChange = { viewModel.onIntent(SettingsIntent.UpdateRefreshInterval(it)) },
+                            valueRange = 1f..60f,
+                            valueLabel = stringResource(Res.string.refresh_interval_seconds).format(settings.refreshInterval)
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
-                        text = stringResource(Res.string.language),
+                        text = stringResource(Res.string.appearance),
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
-                    var expanded by remember { mutableStateOf(false) }
+                    SettingsDropdown(
+                        label = Res.string.language,
+                        items = AvailableLanguage.entries.toTypedArray(),
+                        selectedItem = AvailableLanguage.fromCode(settings.language),
+                        onItemSelected = { viewModel.onIntent(SettingsIntent.UpdateLanguage(it.code)) },
+                        itemLabel = { it.getLabel() },
+                        leadingIcon = FeatherIcons.Globe
+                    )
 
-                    ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = it }
-                    ) {
-                        val fillMaxWidth = Modifier
-                            .fillMaxWidth()
-                        OutlinedTextField(
-                            value = AvailableLanguage.fromCode(settings.language).getLabel(),
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text(stringResource(Res.string.language)) },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                            modifier = fillMaxWidth.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true)
-                        )
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                        ExposedDropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            Column {
-                                AvailableLanguage.entries.forEach { language ->
-                                    DropdownMenuItem(
-                                        text = { Text(language.getLabel()) },
-                                        onClick = {
-                                            viewModel.onIntent(SettingsIntent.UpdateLanguage(language.code))
-                                            expanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    var themeExpanded by remember { mutableStateOf(false) }
-
-                    ExposedDropdownMenuBox(
-                        expanded = themeExpanded,
-                        onExpandedChange = { themeExpanded = it }
-                    ) {
-                        OutlinedTextField(
-                            value = settings.themeMode.getLabel(),
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text(stringResource(Res.string.theme)) },
-                            leadingIcon = { Icon(settings.themeMode.icon, contentDescription = null) },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = themeExpanded) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true)
-                        )
-
-                        ExposedDropdownMenu(
-                            expanded = themeExpanded,
-                            onDismissRequest = { themeExpanded = false }
-                        ) {
-                            Column {
-                                ThemeMode.entries.forEach { mode ->
-                                    DropdownMenuItem(
-                                        leadingIcon = { Icon(mode.icon, contentDescription = null) },
-                                        text = { Text(mode.getLabel()) },
-                                        onClick = {
-                                            viewModel.onIntent(SettingsIntent.UpdateThemeMode(mode))
-                                            themeExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    SettingsDropdown(
+                        label = Res.string.theme,
+                        items = ThemeMode.entries.toTypedArray(),
+                        selectedItem = settings.themeMode,
+                        onItemSelected = { viewModel.onIntent(SettingsIntent.UpdateThemeMode(it)) },
+                        itemLabel = { it.getLabel() },
+                        leadingIcon = settings.themeMode.icon,
+                        itemIcon = { it.icon }
+                    )
 
                     Spacer(modifier = Modifier.height(24.dp))
 

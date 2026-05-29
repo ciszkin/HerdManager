@@ -16,13 +16,18 @@ sealed interface SettingsIntent : MviIntent {
     data class UpdateThemeMode(val themeMode: ThemeMode) : SettingsIntent
     data object ResetToDefaults : SettingsIntent
     data object DiscardChanges : SettingsIntent
+    data object CheckForUpdates : SettingsIntent
 }
 
 data class SettingsState(
     val settings: Settings? = null,
     val isSaving: Boolean = false,
     val saveError: String? = null,
-    val isDirty: Boolean = false
+    val isDirty: Boolean = false,
+    val isNewVersionAvailable: Boolean = false,
+    val currentVersion: String? = null,
+    val latestVersion: String? = null,
+    val releaseUrl: String? = null
 ) : MviState
 
 sealed interface SettingsEffect : MviEffect {

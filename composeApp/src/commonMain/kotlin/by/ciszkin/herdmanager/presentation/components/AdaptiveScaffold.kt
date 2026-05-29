@@ -8,5 +8,6 @@ expect fun AdaptiveScaffold(
     selectedRoute: String,
     onRouteSelected: (String) -> Unit,
     language: String,
+    hasUpdateBadge: Boolean = false,
     content: @Composable (Modifier) -> Unit
 )

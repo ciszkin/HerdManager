@@ -2,6 +2,7 @@ package by.ciszkin.herdmanager.presentation.settings
 
 import by.ciszkin.herdmanager.domain.model.Settings
 import by.ciszkin.herdmanager.domain.model.ThemeMode
+import by.ciszkin.herdmanager.domain.usecase.CheckForOllamaUpdateUseCase
 import by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase
 import by.ciszkin.herdmanager.domain.usecase.SaveSettingsUseCase
 import by.ciszkin.herdmanager.presentation.architecture.BaseMviViewModel
@@ -12,7 +13,8 @@ import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     private val observeSettingsUseCase: ObserveSettingsUseCase,
-    private val saveSettingsUseCase: SaveSettingsUseCase
+    private val saveSettingsUseCase: SaveSettingsUseCase,
+    private val checkForOllamaUpdateUseCase: CheckForOllamaUpdateUseCase
 ) : BaseMviViewModel<SettingsIntent, SettingsState, SettingsEffect>() {
 
     private var originalSettings: Settings? = null
@@ -31,6 +33,7 @@ class SettingsViewModel(
             is SettingsIntent.UpdateThemeMode -> updateThemeMode(intent.themeMode)
             SettingsIntent.ResetToDefaults -> resetToDefaults()
             SettingsIntent.DiscardChanges -> discardChanges()
+            SettingsIntent.CheckForUpdates -> checkForUpdates()
         }
     }
 
@@ -41,6 +44,7 @@ class SettingsViewModel(
                 originalSettings = settings
                 currentSettings = settings
                 reduceState { copy(settings = settings, isDirty = false) }
+                checkForUpdates()
             }
         }
     }
@@ -126,6 +130,25 @@ class SettingsViewModel(
         originalSettings?.let { original ->
             currentSettings = original
             reduceState { copy(settings = original, isDirty = false) }
+        }
+    }
+
+    private fun checkForUpdates() {
+        screenModelScope.launch {
+            // First, fetch and save the update data
+            checkForOllamaUpdateUseCase.checkForUpdates()
+
+            // Then, collect the flow to get the values
+            checkForOllamaUpdateUseCase().collect { updateInfo ->
+                reduceState {
+                    copy(
+                        isNewVersionAvailable = updateInfo.isNewerAvailable,
+                        currentVersion = updateInfo.currentVersion,
+                        latestVersion = updateInfo.latestVersion,
+                        releaseUrl = updateInfo.releaseUrl
+                    )
+                }
+            }
         }
     }
 }

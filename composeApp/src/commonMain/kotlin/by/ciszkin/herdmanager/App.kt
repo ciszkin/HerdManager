@@ -25,6 +25,7 @@ import cafe.adriel.voyager.transitions.SlideTransition
 @Composable
 fun App() {
     val settings by AppModule.observeSettingsUseCase().collectAsState(initial = null)
+    val updateInfo by AppModule.checkForOllamaUpdateUseCase().collectAsState(initial = null)
 
     val isDarkTheme = when (settings?.themeMode) {
         ThemeMode.LIGHT -> false
@@ -40,7 +41,8 @@ fun App() {
         AdaptiveScaffold(
             selectedRoute = selectedRoute,
             onRouteSelected = { selectedRoute = it},
-            language = settings?.language ?: "en"
+            language = settings?.language ?: "en",
+            hasUpdateBadge = updateInfo?.isNewerAvailable == true
         ) { contentModifier ->
             Surface(
                 modifier = contentModifier,
