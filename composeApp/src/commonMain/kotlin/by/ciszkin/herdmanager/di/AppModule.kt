@@ -1,12 +1,13 @@
 package by.ciszkin.herdmanager.di
 
 import by.ciszkin.herdmanager.data.api.OllamaApiService
-import by.ciszkin.herdmanager.data.api.createOllamaHttpClient
 import by.ciszkin.herdmanager.data.api.PlatformHttpClientEngine
+import by.ciszkin.herdmanager.data.api.createOllamaHttpClient
+import by.ciszkin.herdmanager.data.connection.ConnectionMonitor
+import by.ciszkin.herdmanager.data.local.dataStore
 import by.ciszkin.herdmanager.data.repository.OllamaRepositoryImpl
 import by.ciszkin.herdmanager.data.repository.RegistryRepositoryImpl
 import by.ciszkin.herdmanager.data.repository.SettingsRepositoryImpl
-import by.ciszkin.herdmanager.data.local.dataStore
 import by.ciszkin.herdmanager.domain.repository.OllamaRepository
 import by.ciszkin.herdmanager.domain.repository.RegistryRepository
 import by.ciszkin.herdmanager.domain.repository.SettingsRepository
@@ -16,20 +17,29 @@ import by.ciszkin.herdmanager.domain.usecase.GetRegistryModelsUseCase
 import by.ciszkin.herdmanager.domain.usecase.GetRunningModelsUseCase
 import by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase
 import by.ciszkin.herdmanager.domain.usecase.PullModelUseCase
+import by.ciszkin.herdmanager.domain.usecase.SaveSettingsUseCase
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
-import by.ciszkin.herdmanager.domain.usecase.SaveSettingsUseCase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
 object AppModule {
     private val settingsRepository: SettingsRepository by lazy { SettingsRepositoryImpl(dataStore) }
 
+    val connectionMonitor by lazy {
+        ConnectionMonitor(apiService).also {
+            it.start(CoroutineScope(Dispatchers.IO))
+        }
+    }
+
     private val apiService by lazy {
         val settings = runBlocking { settingsRepository.settingsFlow.first() }
         OllamaApiService(createOllamaHttpClient(settings.serverUrl))
     }
-    private val repository: OllamaRepository by lazy { OllamaRepositoryImpl(apiService) }
+    private val repository: OllamaRepository by lazy {
+        OllamaRepositoryImpl(apiService) }
     private val registryRepository: RegistryRepository by lazy { RegistryRepositoryImpl() }
 
     val scraperHttpClient by lazy {

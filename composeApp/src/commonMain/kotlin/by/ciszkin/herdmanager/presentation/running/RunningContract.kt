@@ -1,7 +1,6 @@
 package by.ciszkin.herdmanager.presentation.running
 
 import by.ciszkin.herdmanager.domain.model.RunningModel
-import by.ciszkin.herdmanager.presentation.architecture.MviEffect
 import by.ciszkin.herdmanager.presentation.architecture.MviIntent
 import by.ciszkin.herdmanager.presentation.architecture.MviState
 
@@ -18,7 +17,3 @@ data class RunningState(
     val pollingEnabled: Boolean = false,
     val pollingIntervalMs: Long = 0L
 ) : MviState
-
-sealed interface RunningEffect : MviEffect {
-    data object AnimateRefreshIcon : RunningEffect
-}

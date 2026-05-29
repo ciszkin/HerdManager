@@ -15,6 +15,7 @@ sealed interface ModelListIntent : MviIntent {
 data class ModelListState(
     val models: List<OllamaModel> = emptyList(),
     val isLoading: Boolean = false,
+
     val isDeleting: Boolean = false,
     val modelToDelete: String? = null,
     val error: String? = null

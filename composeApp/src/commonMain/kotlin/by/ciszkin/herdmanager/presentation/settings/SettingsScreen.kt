@@ -26,8 +26,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.ui.text.input.KeyboardType
+import by.ciszkin.herdmanager.presentation.components.HerdTopBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -106,9 +106,9 @@ object SettingsScreen : Screen {
 
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text(stringResource(Res.string.settings)) },
-                    actions = {
+                HerdTopBar(
+                    title = stringResource(Res.string.settings),
+                    additionalActions = {
                         IconButton(onClick = { viewModel.onIntent(SettingsIntent.ResetToDefaults) }) {
                             Icon(FeatherIcons.RotateCcw, stringResource(Res.string.reset_to_defaults))
                         }

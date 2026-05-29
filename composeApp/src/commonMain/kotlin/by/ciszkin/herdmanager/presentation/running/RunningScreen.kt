@@ -1,34 +1,24 @@
 package by.ciszkin.herdmanager.presentation.running
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import by.ciszkin.herdmanager.di.AppModule
 import by.ciszkin.herdmanager.presentation.components.EmptyView
 import by.ciszkin.herdmanager.presentation.components.ErrorView
+import by.ciszkin.herdmanager.presentation.components.HerdTopBar
 import by.ciszkin.herdmanager.presentation.components.LoadingView
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.model.rememberScreenModel
-import compose.icons.FeatherIcons
-import compose.icons.feathericons.RefreshCw
 import herdmanager.composeapp.generated.resources.Res
 import herdmanager.composeapp.generated.resources.empty_running
-import herdmanager.composeapp.generated.resources.refresh
 import herdmanager.composeapp.generated.resources.running_models
 import org.jetbrains.compose.resources.stringResource
 
@@ -45,23 +35,9 @@ object RunningScreen : Screen {
             )
         }
         val state by viewModel.state.collectAsState()
-        val rotation = remember { Animatable(0f) }
 
         LaunchedEffect(Unit) {
             viewModel.onIntent(RunningIntent.Initialize)
-            viewModel.effect.collect { effect ->
-                when (effect) {
-                    RunningEffect.AnimateRefreshIcon -> {
-                        rotation.apply {
-                            snapTo(0f)
-                            animateTo(
-                                targetValue = 360f,
-                                animationSpec = tween(durationMillis = 1000),
-                            )
-                        }
-                    }
-                }
-            }
         }
 
         DisposableEffect(Unit) {
@@ -72,20 +48,11 @@ object RunningScreen : Screen {
 
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text(stringResource(Res.string.running_models)) },
-                    actions = {
-                        IconButton(onClick = {
-                            viewModel.onIntent(RunningIntent.Refresh)
-                        }) {
-                            Icon(
-                                imageVector = FeatherIcons.RefreshCw,
-                                contentDescription = stringResource(Res.string.refresh),
-                                tint = if (state.pollingEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.rotate(rotation.value)
-                            )
-                        }
-                    }
+                HerdTopBar(
+                    title = stringResource(Res.string.running_models),
+                    onRefresh = { viewModel.onIntent(RunningIntent.Refresh) },
+                    buttonColor = if (state.pollingEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    isLoading = state.isLoading
                 )
             }
         ) { padding ->

@@ -25,7 +25,7 @@ class RegistryViewModel(
             RegistryIntent.LoadModels -> loadModels()
             is RegistryIntent.SearchModels -> filterModels(intent.query)
             RegistryIntent.ClearSearch -> filterModels()
-            RegistryIntent.Retry -> loadModels()
+            RegistryIntent.Retry -> refreshModels()
             RegistryIntent.LoadMore -> loadMore()
             is RegistryIntent.ShowPullDialog -> showPullDialog(intent.model)
             is RegistryIntent.SelectTag -> selectTag(intent.tag)
@@ -42,6 +42,20 @@ class RegistryViewModel(
                 .onSuccess { models ->
                     reduceState { copy(models = models, allModels = models, isLoading = false, canLoadMore = models.isNotEmpty()) }
                     sendEffect(RegistryEffect.ScrollToTop)
+                }
+                .onFailure { error ->
+                    reduceState { copy(error = error.message, isLoading = false) }
+                }
+        }
+    }
+
+    private fun refreshModels() {
+        screenModelScope.launch {
+            reduceState { copy(isLoading = true, error = null, currentPage = 1, canLoadMore = true) }
+            delay(100)
+            getRegistryModelsUseCase(page = 1)
+                .onSuccess { models ->
+                    reduceState { copy(models = models, allModels = models, isLoading = false, canLoadMore = models.isNotEmpty()) }
                 }
                 .onFailure { error ->
                     reduceState { copy(error = error.message, isLoading = false) }

@@ -13,7 +13,7 @@ import kotlinx.coroutines.isActive
 class RunningViewModel(
     private val getRunningModelsUseCase: GetRunningModelsUseCase,
     private val observeSettingsUseCase: ObserveSettingsUseCase
-) : BaseMviViewModel<RunningIntent, RunningState, RunningEffect>() {
+) : BaseMviViewModel<RunningIntent, RunningState, Nothing>() {
 
     private var pollingJob: Job? = null
 
@@ -53,10 +53,9 @@ class RunningViewModel(
         }
     }
 
-    private fun loadModels() {
+    private fun refreshModels() {
         screenModelScope.launch {
             reduceState { copy(isLoading = true, error = null) }
-            delay(100)
             getRunningModelsUseCase()
                 .onSuccess { models ->
                     reduceState { copy(models = models, isLoading = false) }
@@ -68,8 +67,7 @@ class RunningViewModel(
     }
 
     private fun refresh() {
-        sendEffect(RunningEffect.AnimateRefreshIcon)
-        loadModels()
+        refreshModels()
     }
 
     private fun startPolling() {

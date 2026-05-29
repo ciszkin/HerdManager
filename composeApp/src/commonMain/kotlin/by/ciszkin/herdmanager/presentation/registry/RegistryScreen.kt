@@ -8,16 +8,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import by.ciszkin.herdmanager.presentation.components.VerticalScrollbarWithStyle
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -25,8 +20,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -34,17 +29,16 @@ import by.ciszkin.herdmanager.di.AppModule
 import by.ciszkin.herdmanager.domain.model.PullResult
 import by.ciszkin.herdmanager.presentation.components.EmptyView
 import by.ciszkin.herdmanager.presentation.components.ErrorView
+import by.ciszkin.herdmanager.presentation.components.HerdTopBar
 import by.ciszkin.herdmanager.presentation.components.LoadingView
-import cafe.adriel.voyager.core.screen.Screen
+import by.ciszkin.herdmanager.presentation.components.VerticalScrollbarWithStyle
 import cafe.adriel.voyager.core.model.rememberScreenModel
-import compose.icons.FeatherIcons
-import compose.icons.feathericons.RefreshCw
+import cafe.adriel.voyager.core.screen.Screen
 import herdmanager.composeapp.generated.resources.Res
 import herdmanager.composeapp.generated.resources.empty_registry
-import herdmanager.composeapp.generated.resources.refresh
 import herdmanager.composeapp.generated.resources.registry
-import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 object RegistryScreen : Screen {
@@ -52,12 +46,13 @@ object RegistryScreen : Screen {
 
     @Composable
     override fun Content() {
-        val viewModel = rememberScreenModel {
-            RegistryViewModel(
-                getRegistryModelsUseCase = AppModule.getRegistryModelsUseCase,
-                pullModelUseCase = AppModule.pullModelUseCase
-            )
-        }
+        val viewModel =
+            rememberScreenModel {
+                RegistryViewModel(
+                    getRegistryModelsUseCase = AppModule.getRegistryModelsUseCase,
+                    pullModelUseCase = AppModule.pullModelUseCase,
+                )
+            }
         val state by viewModel.state.collectAsState()
         val gridState = rememberLazyGridState()
         val snackbarHostState = remember { SnackbarHostState() }
@@ -69,13 +64,12 @@ object RegistryScreen : Screen {
             snapshotFlow {
                 val layoutInfo = gridState.layoutInfo
                 layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            }
-                .collect { lastVisible ->
-                    val totalItems = gridState.layoutInfo.totalItemsCount
-                    if (lastVisible >= totalItems - 6 && !state.isLoadingMore && state.canLoadMore && state.models.isNotEmpty()) {
-                        viewModel.onIntent(RegistryIntent.LoadMore)
-                    }
+            }.collect { lastVisible ->
+                val totalItems = gridState.layoutInfo.totalItemsCount
+                if (lastVisible >= totalItems - 6 && !state.isLoadingMore && state.canLoadMore && state.models.isNotEmpty()) {
+                    viewModel.onIntent(RegistryIntent.LoadMore)
                 }
+            }
         }
 
         LaunchedEffect(Unit) {
@@ -109,16 +103,13 @@ object RegistryScreen : Screen {
 
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text(stringResource(Res.string.registry)) },
-                    actions = {
-                        IconButton(onClick = { viewModel.onIntent(RegistryIntent.Retry) }) {
-                            Icon(FeatherIcons.RefreshCw, stringResource(Res.string.refresh))
-                        }
-                    }
+                HerdTopBar(
+                    title = stringResource(Res.string.registry),
+                    onRefresh = { viewModel.onIntent(RegistryIntent.Retry) },
+                    isLoading = state.isLoading
                 )
             },
-            snackbarHost = { SnackbarHost(snackbarHostState) }
+            snackbarHost = { SnackbarHost(snackbarHostState) },
         ) { padding ->
             Column(modifier = Modifier.padding(padding)) {
                 SearchBar(
@@ -127,29 +118,36 @@ object RegistryScreen : Screen {
                     onClear = { viewModel.onIntent(RegistryIntent.ClearSearch) },
                     isLoading = state.isSearching,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
+                            .fillMaxWidth()
+                            .padding(16.dp),
                 )
                 when {
-                    state.isLoading -> LoadingView()
-                    !state.isLoading && state.models.isEmpty() -> EmptyView(
-                        stringResource(Res.string.empty_registry)
-                    )
-                    state.error != null -> ErrorView(
-                        error = state.error,
-                        onRetry = { viewModel.onIntent(RegistryIntent.Retry) }
-                    )
+                    state.isLoading -> {
+                        LoadingView()
+                    }
+                    !state.isLoading && state.models.isEmpty() -> {
+                        EmptyView(
+                            stringResource(Res.string.empty_registry),
+                        )
+                    }
+
+                    state.error != null -> {
+                        ErrorView(
+                            error = state.error,
+                            onRetry = { viewModel.onIntent(RegistryIntent.Retry) },
+                        )
+                    }
 
                     else -> {
                         Box(modifier = Modifier.fillMaxSize()) {
                             LazyVerticalGrid(
                                 columns = GridCells.Adaptive(minSize = 300.dp),
                                 state = gridState,
-                                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)
+                                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
                             ) {
                                 items(
                                     count = state.models.size,
-                                    key = { index -> state.models[index].id }
+                                    key = { index -> state.models[index].id },
                                 ) { index ->
                                     val model = state.models[index]
                                     RegistryCard(
@@ -157,16 +155,17 @@ object RegistryScreen : Screen {
                                         onPull = {
                                             showPullDialog = true
                                             viewModel.onIntent(RegistryIntent.ShowPullDialog(model))
-                                        }
+                                        },
                                     )
                                 }
                                 if (state.isLoadingMore) {
                                     item {
                                         Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp),
-                                            contentAlignment = Alignment.Center
+                                            modifier =
+                                                Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp),
+                                            contentAlignment = Alignment.Center,
                                         ) {
                                             CircularProgressIndicator()
                                         }
@@ -175,7 +174,7 @@ object RegistryScreen : Screen {
                             }
                             VerticalScrollbarWithStyle(
                                 gridState = gridState,
-                                modifier = Modifier.align(Alignment.CenterEnd)
+                                modifier = Modifier.align(Alignment.CenterEnd),
                             )
                         }
                     }
@@ -195,7 +194,7 @@ object RegistryScreen : Screen {
                     onDismiss = {
                         showPullDialog = false
                         viewModel.onIntent(RegistryIntent.ResetPullState)
-                    }
+                    },
                 )
             }
         }

@@ -15,14 +15,14 @@ class ModelListViewModel(
 
     override fun onIntent(intent: ModelListIntent) {
         when (intent) {
-            ModelListIntent.Refresh -> loadModels()
+            ModelListIntent.Refresh -> refreshModels()
             is ModelListIntent.DeleteModel -> confirmDelete(intent.modelName)
             is ModelListIntent.ConfirmDelete -> deleteModel(intent.modelName)
-            ModelListIntent.Retry -> loadModels()
+            ModelListIntent.Retry -> refreshModels()
         }
     }
 
-    private fun loadModels() {
+    private fun refreshModels() {
         screenModelScope.launch {
             reduceState { copy(isLoading = true, error = null) }
             getModelsUseCase()
@@ -40,7 +40,7 @@ class ModelListViewModel(
             reduceState { copy(isDeleting = true, modelToDelete = modelName) }
             deleteModelUseCase(modelName)
                 .onSuccess {
-                    loadModels()
+                    refreshModels()
                     sendEffect(ModelListEffect.ShowModelDeletionSuccess)
                 }
                 .onFailure {

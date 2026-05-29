@@ -2,13 +2,9 @@ package by.ciszkin.herdmanager.presentation.modellist
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,18 +17,16 @@ import androidx.compose.ui.Modifier
 import by.ciszkin.herdmanager.di.AppModule
 import by.ciszkin.herdmanager.domain.model.OllamaModel
 import by.ciszkin.herdmanager.presentation.components.EmptyView
+import by.ciszkin.herdmanager.presentation.components.HerdTopBar
 import by.ciszkin.herdmanager.presentation.components.ErrorView
 import by.ciszkin.herdmanager.presentation.components.LoadingView
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.model.rememberScreenModel
-import compose.icons.FeatherIcons
-import compose.icons.feathericons.RefreshCw
 import herdmanager.composeapp.generated.resources.Res
 import herdmanager.composeapp.generated.resources.delete_failed
 import herdmanager.composeapp.generated.resources.empty_models
 import herdmanager.composeapp.generated.resources.local_models
 import herdmanager.composeapp.generated.resources.model_deleted
-import herdmanager.composeapp.generated.resources.refresh
 import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.launch
 
@@ -87,13 +81,10 @@ object ModelListScreen : Screen {
 
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text(stringResource(Res.string.local_models)) },
-                    actions = {
-                        IconButton(onClick = { viewModel.onIntent(ModelListIntent.Refresh) }) {
-                            Icon(FeatherIcons.RefreshCw, stringResource(Res.string.refresh))
-                        }
-                    }
+                HerdTopBar(
+                    title = stringResource(Res.string.local_models),
+                    onRefresh = { viewModel.onIntent(ModelListIntent.Refresh) },
+                    isLoading = state.isLoading
                 )
             },
             snackbarHost = { SnackbarHost(snackbarHostState) }
