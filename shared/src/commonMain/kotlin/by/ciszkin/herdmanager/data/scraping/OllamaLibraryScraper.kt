@@ -4,7 +4,8 @@ import by.ciszkin.herdmanager.domain.model.RegistryModel
 import io.ktor.client.HttpClient
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -15,7 +16,7 @@ object OllamaLibraryScraper : KoinComponent {
 
     private val httpClient: HttpClient by inject(named("scraper"))
 
-    fun fetchModels(query: String, page: Int): Result<List<RegistryModel>> = runCatching {
+    suspend fun fetchModels(query: String, page: Int): Result<List<RegistryModel>> = kotlin.runCatching {
         val url = when {
             query.isEmpty() && page == 1 -> BASE_URL
             query.isEmpty() -> "$BASE_URL?page=$page"
@@ -23,10 +24,13 @@ object OllamaLibraryScraper : KoinComponent {
             else -> "$BASE_URL?q=$query&page=$page"
         }
 
-        val html: String = runBlocking {
+        val html: String = withContext(Dispatchers.IO) {
             httpClient.get(url) {
                 headers {
-                    append("User-Agent", "Mozilla/5.0")
+                    append("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36")
+                    append("Accept", "*/*")
+                    append("hx-request", "true")
+                    append("hx-current-url", "https://ollama.com/search")
                 }
             }.bodyAsText()
         }
@@ -37,7 +41,8 @@ object OllamaLibraryScraper : KoinComponent {
     }
 
     private fun parseModelsFromHtml(doc: org.jsoup.nodes.Document): List<RegistryModel> {
-        return doc.select("li[x-test-model]").mapNotNull { modelElement ->
+        val modelElements = doc.select("li[x-test-model]")
+        val models = modelElements.mapNotNull { modelElement ->
             try {
                 val linkElement = modelElement.selectFirst("a[href^=/]") ?: return@mapNotNull null
                 val name = linkElement.attr("href").removePrefix("/library/").removePrefix("/i/")
@@ -74,6 +79,7 @@ object OllamaLibraryScraper : KoinComponent {
                 null
             }
         }
+        return models
     }
 
     private fun parsePullCount(text: String): Long {

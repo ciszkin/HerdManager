@@ -90,13 +90,13 @@ class RegistryViewModel(
                     val existingIds = currentState.models.map { it.id }.toSet()
                     val uniqueNewModels = newModels.filter { it.id !in existingIds }
                     val allModels = currentState.models + uniqueNewModels
-                    reduceState { 
+                    reduceState {
                         copy(
-                            models = allModels, 
-                            isLoadingMore = false, 
+                            models = allModels,
+                            isLoadingMore = false,
                             currentPage = nextPage,
                             canLoadMore = newModels.isNotEmpty()
-                        ) 
+                        )
                     }
                 }
                 .onFailure {
