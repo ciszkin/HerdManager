@@ -1,16 +1,19 @@
 package by.ciszkin.herdmanager.data.scraping
 
-import by.ciszkin.herdmanager.di.AppModule
 import by.ciszkin.herdmanager.domain.model.RegistryModel
+import io.ktor.client.HttpClient
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.coroutines.runBlocking
 import org.jsoup.Jsoup
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import org.koin.core.qualifier.named
 
-object OllamaLibraryScraper {
+object OllamaLibraryScraper : KoinComponent {
     private const val BASE_URL = "https://ollama.com/search"
 
-    private val httpClient get() = AppModule.scraperHttpClient
+    private val httpClient: HttpClient by inject(named("scraper"))
 
     fun fetchModels(query: String, page: Int): Result<List<RegistryModel>> = runCatching {
         val url = when {

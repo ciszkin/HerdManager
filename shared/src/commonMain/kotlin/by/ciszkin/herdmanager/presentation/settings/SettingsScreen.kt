@@ -32,7 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import by.ciszkin.herdmanager.di.AppModule
+import org.koin.compose.koinInject
+
 import by.ciszkin.herdmanager.domain.model.ThemeMode
 import by.ciszkin.herdmanager.presentation.components.UpdateBanner
 import by.ciszkin.herdmanager.util.openUrl
@@ -67,11 +68,14 @@ object SettingsScreen : Screen {
 
     @Composable
     override fun Content() {
+        val observeSettingsUseCase = koinInject<by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase>()
+        val saveSettingsUseCase = koinInject<by.ciszkin.herdmanager.domain.usecase.SaveSettingsUseCase>()
+        val checkForOllamaUpdateUseCase = koinInject<by.ciszkin.herdmanager.domain.usecase.CheckForOllamaUpdateUseCase>()
         val viewModel = rememberScreenModel {
             SettingsViewModel(
-                observeSettingsUseCase = AppModule.observeSettingsUseCase,
-                saveSettingsUseCase = AppModule.saveSettingsUseCase,
-                checkForOllamaUpdateUseCase = AppModule.checkForOllamaUpdateUseCase
+                observeSettingsUseCase = observeSettingsUseCase,
+                saveSettingsUseCase = saveSettingsUseCase,
+                checkForOllamaUpdateUseCase = checkForOllamaUpdateUseCase
             )
         }
         val state by viewModel.state.collectAsState()

@@ -25,7 +25,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import by.ciszkin.herdmanager.di.AppModule
+import org.koin.compose.koinInject
 import by.ciszkin.herdmanager.domain.model.PullResult
 import by.ciszkin.herdmanager.presentation.components.EmptyView
 import by.ciszkin.herdmanager.presentation.components.ErrorView
@@ -46,11 +46,13 @@ object RegistryScreen : Screen {
 
     @Composable
     override fun Content() {
+        val getRegistryModelsUseCase = koinInject<by.ciszkin.herdmanager.domain.usecase.GetRegistryModelsUseCase>()
+        val pullModelUseCase = koinInject<by.ciszkin.herdmanager.domain.usecase.PullModelUseCase>()
         val viewModel =
             rememberScreenModel {
                 RegistryViewModel(
-                    getRegistryModelsUseCase = AppModule.getRegistryModelsUseCase,
-                    pullModelUseCase = AppModule.pullModelUseCase,
+                    getRegistryModelsUseCase = getRegistryModelsUseCase,
+                    pullModelUseCase = pullModelUseCase,
                 )
             }
         val state by viewModel.state.collectAsState()

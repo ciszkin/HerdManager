@@ -12,13 +12,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import kotlinx.coroutines.launch
-import by.ciszkin.herdmanager.di.AppModule
+import org.koin.compose.koinInject
+import by.ciszkin.herdmanager.data.connection.ConnectionManager
+import by.ciszkin.herdmanager.domain.model.ConnectionState
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.RefreshCw
 import herdmanager.shared.generated.resources.Res
@@ -36,7 +37,13 @@ fun HerdTopBar(
     isLoading: Boolean = false,
     additionalActions: @Composable RowScope.() -> Unit = {}
 ) {
-    val connectionState by AppModule.connectionMonitor.state.collectAsState()
+    val connectionManager: ConnectionManager = koinInject()
+    val connectionMonitor = connectionManager.getConnectionMonitorOrNull()
+
+    val connectionState: ConnectionState? = remember(connectionMonitor) {
+        connectionMonitor?.state
+    }?.collectAsState()?.value
+
     val refreshLabel = stringResource(Res.string.refresh)
     val rotation = remember { Animatable(0f) }
     val coroutineScope = rememberCoroutineScope()
@@ -56,7 +63,9 @@ fun HerdTopBar(
     TopAppBar(
         title = { Text(title) },
         actions = {
-            ConnectionStatusIcon(state = connectionState)
+            if (connectionState != null) {
+                ConnectionStatusIcon(state = connectionState)
+            }
             if (onRefresh != null) {
                 IconButton(onClick = { onRefresh() }) {
                     Icon(

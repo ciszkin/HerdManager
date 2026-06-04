@@ -11,8 +11,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import by.ciszkin.herdmanager.di.AppModule
 import by.ciszkin.herdmanager.domain.model.ThemeMode
+import by.ciszkin.herdmanager.domain.usecase.CheckForOllamaUpdateUseCase
+import by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase
+import org.koin.compose.koinInject
 import by.ciszkin.herdmanager.presentation.components.AdaptiveScaffold
 import by.ciszkin.herdmanager.presentation.components.NavigationItem
 import by.ciszkin.herdmanager.presentation.modellist.ModelListScreen
@@ -24,8 +26,11 @@ import cafe.adriel.voyager.transitions.SlideTransition
 
 @Composable
 fun App() {
-    val settings by AppModule.observeSettingsUseCase().collectAsState(initial = null)
-    val updateInfo by AppModule.checkForOllamaUpdateUseCase().collectAsState(initial = null)
+    val observeSettingsUseCase: ObserveSettingsUseCase = koinInject()
+    val checkForOllamaUpdateUseCase: CheckForOllamaUpdateUseCase = koinInject()
+
+    val settings by observeSettingsUseCase().collectAsState(initial = null)
+    val updateInfo by checkForOllamaUpdateUseCase().collectAsState(initial = null)
 
     val isDarkTheme = when (settings?.themeMode) {
         ThemeMode.LIGHT -> false

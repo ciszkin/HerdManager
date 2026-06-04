@@ -14,7 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import by.ciszkin.herdmanager.di.AppModule
+import org.koin.compose.koinInject
 import by.ciszkin.herdmanager.domain.model.OllamaModel
 import by.ciszkin.herdmanager.presentation.components.EmptyView
 import by.ciszkin.herdmanager.presentation.components.HerdTopBar
@@ -36,10 +36,12 @@ object ModelListScreen : Screen {
 
     @Composable
     override fun Content() {
+        val getModelsUseCase = koinInject<by.ciszkin.herdmanager.domain.usecase.GetModelsUseCase>()
+        val deleteModelUseCase = koinInject<by.ciszkin.herdmanager.domain.usecase.DeleteModelUseCase>()
         val viewModel = rememberScreenModel {
             ModelListViewModel(
-                getModelsUseCase = AppModule.getModelsUseCase,
-                deleteModelUseCase = AppModule.deleteModelUseCase
+                getModelsUseCase = getModelsUseCase,
+                deleteModelUseCase = deleteModelUseCase
             )
         }
         val state by viewModel.state.collectAsState()

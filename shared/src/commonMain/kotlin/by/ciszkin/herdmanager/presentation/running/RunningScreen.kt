@@ -10,7 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import by.ciszkin.herdmanager.di.AppModule
+import org.koin.compose.koinInject
 import by.ciszkin.herdmanager.presentation.components.EmptyView
 import by.ciszkin.herdmanager.presentation.components.ErrorView
 import by.ciszkin.herdmanager.presentation.components.HerdTopBar
@@ -28,10 +28,12 @@ object RunningScreen : Screen {
 
     @Composable
     override fun Content() {
+        val getRunningModelsUseCase = koinInject<by.ciszkin.herdmanager.domain.usecase.GetRunningModelsUseCase>()
+        val observeSettingsUseCase = koinInject<by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase>()
         val viewModel = rememberScreenModel {
             RunningViewModel(
-                getRunningModelsUseCase = AppModule.getRunningModelsUseCase,
-                observeSettingsUseCase = AppModule.observeSettingsUseCase
+                getRunningModelsUseCase = getRunningModelsUseCase,
+                observeSettingsUseCase = observeSettingsUseCase
             )
         }
         val state by viewModel.state.collectAsState()

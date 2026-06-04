@@ -44,6 +44,8 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(libs.feather.icons)
             implementation(libs.jsoup)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.core)
         }
 
         androidMain.dependencies {

@@ -31,7 +31,6 @@ class CheckForOllamaUpdateUseCase(
             currentVersion = ollamaApi.getVersion()
             dataStore.saveCurrentVersion(currentVersion)
         } catch (e: Exception) {
-            println("Failed to fetch current version: ${e.message}")
             // Use cached value
         }
 
@@ -50,7 +49,6 @@ class CheckForOllamaUpdateUseCase(
             dataStore.currentVersionFlow(),
             dataStore.latestVersionFlow()
         ) { currentVersion, latestVersion ->
-            println("Flow emitting - current: $currentVersion, latest: $latestVersion")
             val isNewerAvailable = VersionComparator.isNewerAvailable(currentVersion, latestVersion)
             UpdateInfo(
                 currentVersion = currentVersion,

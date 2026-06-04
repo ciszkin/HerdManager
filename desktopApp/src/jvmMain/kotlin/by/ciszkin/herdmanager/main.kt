@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -14,20 +15,36 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import by.ciszkin.herdmanager.di.AppModule
+import by.ciszkin.herdmanager.data.connection.ConnectionManager
+import by.ciszkin.herdmanager.di.initKoin
 import by.ciszkin.herdmanager.domain.model.ThemeMode
+import by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase
+import org.koin.compose.koinInject
 import java.awt.Dimension
 import java.util.Locale
 
 fun main() {
+    initKoin()
+
     application {
-        val settings by AppModule.observeSettingsUseCase().collectAsState(initial = null)
+        val observeSettingsUseCase: ObserveSettingsUseCase = koinInject()
+        val settings by observeSettingsUseCase().collectAsState(initial = null)
         val locale = when (settings?.language) {
             "be" -> Locale("be")
             else -> Locale("en")
         }
         LaunchedEffect(locale) {
             Locale.setDefault(locale)
+        }
+
+        val connectionManager: ConnectionManager = koinInject()
+        LaunchedEffect(Unit) {
+            connectionManager.start()
+        }
+        DisposableEffect(Unit) {
+            onDispose {
+                connectionManager.stop()
+            }
         }
 
         val state = rememberWindowState(

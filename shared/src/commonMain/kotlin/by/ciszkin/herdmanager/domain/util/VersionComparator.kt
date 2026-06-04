@@ -7,7 +7,6 @@ object VersionComparator {
      * Handles 'v' prefix (e.g., "v0.5.7" -> "0.5.7").
      */
     fun isNewerAvailable(currentVersion: String?, latestVersion: String?): Boolean {
-        println("current version = $currentVersion, latest version = $latestVersion")
         if (currentVersion == null || latestVersion == null || currentVersion.isEmpty() || latestVersion.isEmpty()) return false
 
         val current = parseVersion(currentVersion)

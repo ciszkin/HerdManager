@@ -18,11 +18,12 @@ kotlin {
         jvmMain.dependencies {
             implementation(project(":shared"))
             implementation(compose.desktop.currentOs)
-            implementation(compose.material3)
-            implementation(compose.materialIconsExtended)
+            implementation(libs.compose.material3)
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.ktor.client.cio)
             implementation(libs.jsoup)
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
         }
     }
 }

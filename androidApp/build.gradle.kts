@@ -21,6 +21,8 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.jsoup)
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
         }
     }
 }

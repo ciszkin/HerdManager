@@ -12,14 +12,37 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+/**
+ * Monitors connection to Ollama server by polling for running models.
+ *
+ * Emits connection state changes through [state] StateFlow:
+ * - Initially emits [ConnectionState.Unknown] immediately
+ * - Updates state every [CHECK_INTERVAL_MS] milliseconds
+ * - Emits [ConnectionState.Running] with count when models are running
+ * - Emits [ConnectionState.Idle] when server is reachable but no models running
+ * - Emits [ConnectionState.Disconnected] when server is unreachable
+ *
+ * @param apiService API service for checking connection status
+ */
 class ConnectionMonitor(
     private val apiService: OllamaApiService
 ) {
     private val _state = MutableStateFlow<ConnectionState>(ConnectionState.Unknown)
+
+    /**
+     * StateFlow emitting connection state changes.
+     * Immediately emits [ConnectionState.Unknown] to new subscribers.
+     */
     val state: StateFlow<ConnectionState> = _state.asStateFlow()
 
     private var pollingJob: Job? = null
 
+    /**
+     * Starts monitoring connection with periodic polling.
+     *
+     * The first check happens after [CHECK_INTERVAL_MS] delay.
+     * Use with a CoroutineScope that matches the desired lifecycle.
+     */
     fun start(scope: CoroutineScope) {
         pollingJob = scope.launch(Dispatchers.IO) {
             while (isActive) {
@@ -27,6 +50,14 @@ class ConnectionMonitor(
                 delay(CHECK_INTERVAL_MS)
             }
         }
+    }
+
+    /**
+     * Stops monitoring connection and cleans up resources.
+     */
+    fun stop() {
+        pollingJob?.cancel()
+        pollingJob = null
     }
 
     private suspend fun check() {
@@ -41,6 +72,9 @@ class ConnectionMonitor(
     }
 
     companion object {
+        /**
+         * Interval between connection checks in milliseconds.
+         */
         private const val CHECK_INTERVAL_MS = 15_000L
     }
 }
