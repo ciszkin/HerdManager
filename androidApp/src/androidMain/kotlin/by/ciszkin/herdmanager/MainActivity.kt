@@ -8,20 +8,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
-import by.ciszkin.herdmanager.data.connection.ConnectionManager
-import by.ciszkin.herdmanager.di.initKoin
-import by.ciszkin.herdmanager.di.localApplicationContext
 import by.ciszkin.herdmanager.di.mainActivityComponentName
 import by.ciszkin.herdmanager.di.provideApplicationContext
 import by.ciszkin.herdmanager.domain.model.ThemeMode
 import by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.util.Locale
@@ -30,12 +24,7 @@ class MainActivity : ComponentActivity(), KoinComponent {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        localApplicationContext = applicationContext
         mainActivityComponentName = ComponentName(this, MainActivity::class.java)
-
-        initKoin {
-            properties(mapOf("androidContext" to applicationContext))
-        }
 
         lifecycleScope.launch {
             val observeSettingsUseCase: ObserveSettingsUseCase by inject()
@@ -44,18 +33,6 @@ class MainActivity : ComponentActivity(), KoinComponent {
             setSystemBarAppearance(settings.themeMode)
 
             setContent {
-                val connectionManager: ConnectionManager = koinInject()
-
-                LaunchedEffect(Unit) {
-                    connectionManager.start()
-                }
-
-                DisposableEffect(Unit) {
-                    onDispose {
-                        connectionManager.stop()
-                    }
-                }
-
                 App()
             }
         }

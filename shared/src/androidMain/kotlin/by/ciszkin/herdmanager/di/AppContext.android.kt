@@ -7,7 +7,7 @@ import org.koin.core.context.GlobalContext
 /**
  * Android application context holder.
  *
- * This is set during [MainActivity.onCreate] before Koin initialization.
+ * This is set during [HerdManagerApplication.onCreate] before Koin initialization.
  * It provides platform-specific context for Android-only dependencies.
  */
 lateinit var localApplicationContext: Context
@@ -40,6 +40,6 @@ fun provideApplicationContext(): Context {
 
     throw IllegalStateException(
         "Application context not initialized. " +
-            "Ensure MainActivity.onCreate() sets localApplicationContext before calling initKoin()."
+            "Ensure HerdManagerApplication.onCreate() sets localApplicationContext before calling initKoin()."
     )
 }
