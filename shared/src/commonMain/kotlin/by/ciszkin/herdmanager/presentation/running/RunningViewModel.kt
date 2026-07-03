@@ -1,5 +1,6 @@
 package by.ciszkin.herdmanager.presentation.running
 
+import by.ciszkin.herdmanager.domain.error.mapper.toAppError
 import by.ciszkin.herdmanager.domain.usecase.GetRunningModelsUseCase
 import by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase
 import by.ciszkin.herdmanager.presentation.architecture.BaseMviViewModel
@@ -61,7 +62,7 @@ class RunningViewModel(
                     reduceState { copy(models = models, isLoading = false) }
                 }
                 .onFailure { error ->
-                    reduceState { copy(error = error.message, isLoading = false) }
+                    reduceState { copy(error = error.toAppError(), isLoading = false) }
                 }
         }
     }

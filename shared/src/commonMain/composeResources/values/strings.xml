@@ -96,4 +96,16 @@
     <string name="close">Close</string>
     <string name="confirm">Confirm</string>
     <string name="success">Success</string>
+
+    <!-- Error messages -->
+    <string name="error_network_timeout">Request timed out. Please check your connection.</string>
+    <string name="error_network_connection">Failed to connect to server.</string>
+    <string name="error_http_client_error">Invalid request. Please try again.</string>
+    <string name="error_http_server_error">Server error. Please try again later.</string>
+    <string name="error_http_unknown">HTTP error occurred.</string>
+    <string name="error_server_ollama_unavailable">Ollama server is not responding. Please start it and try again.</string>
+    <string name="error_server_model_not_found">Model not found on server.</string>
+    <string name="error_data_parsing">Failed to process server response.</string>
+    <string name="error_data_validation">Invalid data received.</string>
+    <string name="error_unexpected">Something went wrong. Please try again later.</string>
 </resources>

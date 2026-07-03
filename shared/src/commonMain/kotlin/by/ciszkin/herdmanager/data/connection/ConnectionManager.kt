@@ -66,6 +66,13 @@ class ConnectionManager(
     }
 
     /**
+     * Gets the current server URL.
+     * Returns null if start() hasn't been called yet.
+     */
+    val currentUrl: String?
+        get() = currentServerUrl
+
+    /**
      * Gets the current ConnectionMonitor for state observation.
      * Returns null if start() hasn't been called yet.
      *

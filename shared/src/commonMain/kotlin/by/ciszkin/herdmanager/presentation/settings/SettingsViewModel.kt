@@ -6,7 +6,7 @@ import by.ciszkin.herdmanager.domain.usecase.CheckForOllamaUpdateUseCase
 import by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase
 import by.ciszkin.herdmanager.domain.usecase.SaveSettingsUseCase
 import by.ciszkin.herdmanager.presentation.architecture.BaseMviViewModel
-import by.ciszkin.herdmanager.util.recreateForThemeChange
+import by.ciszkin.herdmanager.domain.error.mapper.toAppError
 import cafe.adriel.voyager.core.model.screenModelScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -101,18 +101,12 @@ class SettingsViewModel(
                     originalSettings = settings
                     reduceState { copy(isSaving = false, isDirty = false) }
                     sendEffect(SettingsEffect.SettingsSaved)
-                    if (previousLanguage != settings.language) {
-                        setLocale(settings.language)
-                    }
-                    if (previousTheme != null && previousTheme != settings.themeMode) {
-                        recreateForThemeChange(previousTheme, settings.themeMode)
-                    }
                 }
                 .onFailure { error ->
                     reduceState {
                         copy(
                             isSaving = false,
-                            saveError = error.message
+                            saveError = error.toAppError()
                         )
                     }
                 }

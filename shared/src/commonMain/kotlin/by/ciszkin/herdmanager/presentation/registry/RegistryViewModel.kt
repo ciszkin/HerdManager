@@ -5,11 +5,13 @@ import by.ciszkin.herdmanager.domain.model.RegistryModel
 import by.ciszkin.herdmanager.domain.usecase.GetRegistryModelsUseCase
 import by.ciszkin.herdmanager.domain.usecase.PullModelUseCase
 import by.ciszkin.herdmanager.presentation.architecture.BaseMviViewModel
+import by.ciszkin.herdmanager.domain.error.mapper.toAppError
 import cafe.adriel.voyager.core.model.screenModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class RegistryViewModel(
     private val getRegistryModelsUseCase: GetRegistryModelsUseCase,
@@ -37,14 +39,14 @@ class RegistryViewModel(
     private fun loadModels() {
         screenModelScope.launch {
             reduceState { copy(isLoading = true, error = null, currentPage = 1, canLoadMore = true) }
-            delay(100)
+            delay(100.milliseconds)
             getRegistryModelsUseCase(page = 1)
                 .onSuccess { models ->
                     reduceState { copy(models = models, allModels = models, isLoading = false, canLoadMore = models.isNotEmpty()) }
                     sendEffect(RegistryEffect.ScrollToTop)
                 }
                 .onFailure { error ->
-                    reduceState { copy(error = error.message, isLoading = false) }
+                    reduceState { copy(error = error.toAppError(), isLoading = false) }
                 }
         }
     }
@@ -52,13 +54,13 @@ class RegistryViewModel(
     private fun refreshModels() {
         screenModelScope.launch {
             reduceState { copy(isLoading = true, error = null, currentPage = 1, canLoadMore = true) }
-            delay(100)
+            delay(100.milliseconds)
             getRegistryModelsUseCase(page = 1)
                 .onSuccess { models ->
                     reduceState { copy(models = models, allModels = models, isLoading = false, canLoadMore = models.isNotEmpty()) }
                 }
                 .onFailure { error ->
-                    reduceState { copy(error = error.message, isLoading = false) }
+                    reduceState { copy(error = error.toAppError(), isLoading = false) }
                 }
         }
     }
@@ -66,13 +68,13 @@ class RegistryViewModel(
     private fun filterModels(query: String = "") {
         screenModelScope.launch {
             reduceState { copy(isLoading = true, searchQuery = query, currentPage = 1, canLoadMore = true, allModels = emptyList()) }
-            delay(100)
+            delay(100.milliseconds)
             getRegistryModelsUseCase(query, page = 1)
                 .onSuccess { models ->
                     reduceState { copy(models = models, allModels = emptyList(), isLoading = false, canLoadMore = models.isNotEmpty()) }
                 }
                 .onFailure { error ->
-                    reduceState { copy(error = error.message, isLoading = false) }
+                    reduceState { copy(error = error.toAppError(), isLoading = false) }
                 }
         }
     }
@@ -84,7 +86,7 @@ class RegistryViewModel(
         screenModelScope.launch {
             val nextPage = currentState.currentPage + 1
             reduceState { copy(isLoadingMore = true) }
-            delay(100)
+            delay(100.milliseconds)
             getRegistryModelsUseCase(currentState.searchQuery, nextPage)
                 .onSuccess { newModels ->
                     val existingIds = currentState.models.map { it.id }.toSet()
@@ -138,18 +140,17 @@ class RegistryViewModel(
             }
             pullModelUseCase("$modelName:$tag")
                 .catch { error ->
+                    val appError = error.toAppError()
                     reduceState {
                         copy(
-                            pullResult = PullResult.Error(
-                                error.message ?: error.localizedMessage
-                            )
+                            pullResult = PullResult.Error(appError)
                         )
                     }
-                    sendEffect(RegistryEffect.ShowToast(error.message ?: error.localizedMessage))
+                    sendEffect(RegistryEffect.ShowToast(appError))
                 }
                 .collect { result ->
                     if (result is PullResult.Error) {
-                        sendEffect(RegistryEffect.ShowToast(result.message))
+                        sendEffect(RegistryEffect.ShowToast(result.error))
                     }
                     reduceState { copy(pullResult = result) }
                 }

@@ -8,6 +8,7 @@ import by.ciszkin.herdmanager.data.local.saveRefreshInterval
 import by.ciszkin.herdmanager.data.local.saveServerUrl
 import by.ciszkin.herdmanager.data.local.saveThemeMode
 import by.ciszkin.herdmanager.data.local.settingsFlow
+import by.ciszkin.herdmanager.domain.error.mapper.mapErrorWithContext
 import by.ciszkin.herdmanager.domain.model.Settings
 import by.ciszkin.herdmanager.domain.repository.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
@@ -38,5 +39,7 @@ class SettingsRepositoryImpl(
         dataStore.savePollingEnabled(settings.pollingEnabled)
         dataStore.saveLanguage(settings.language)
         dataStore.saveThemeMode(settings.themeMode)
-    }
+    }.mapErrorWithContext(
+        operation = "saveSettings"
+    )
 }

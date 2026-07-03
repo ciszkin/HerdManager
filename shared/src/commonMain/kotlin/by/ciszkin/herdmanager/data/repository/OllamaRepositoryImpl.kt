@@ -2,6 +2,7 @@ package by.ciszkin.herdmanager.data.repository
 
 import by.ciszkin.herdmanager.data.api.OllamaApiService
 import by.ciszkin.herdmanager.data.connection.ConnectionManager
+import by.ciszkin.herdmanager.domain.error.mapper.mapErrorWithContext
 import by.ciszkin.herdmanager.domain.model.OllamaModel
 import by.ciszkin.herdmanager.domain.model.PullProgress
 import by.ciszkin.herdmanager.domain.model.RunningModel
@@ -41,15 +42,25 @@ class OllamaRepositoryImpl(
 
     override suspend fun getModels(): Result<List<OllamaModel>> = runCatching {
         apiService.getModels()
-    }
+    }.mapErrorWithContext(
+        operation = "getModels",
+        host = connectionManager.currentUrl ?: "unknown"
+    )
 
     override suspend fun getRunningModels(): Result<List<RunningModel>> = runCatching {
         apiService.getRunningModels()
-    }
+    }.mapErrorWithContext(
+        operation = "getRunningModels",
+        host = connectionManager.currentUrl ?: "unknown"
+    )
 
     override suspend fun deleteModel(name: String): Result<Unit> = runCatching {
         apiService.deleteModel(name)
-    }
+        Unit
+    }.mapErrorWithContext(
+        operation = "deleteModel",
+        host = connectionManager.currentUrl ?: "unknown"
+    )
 
     override fun pullModel(modelName: String): Flow<Result<PullProgress>> {
         return apiService.pullModel(modelName)

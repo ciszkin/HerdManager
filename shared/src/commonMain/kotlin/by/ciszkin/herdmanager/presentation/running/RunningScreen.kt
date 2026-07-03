@@ -60,12 +60,12 @@ object RunningScreen : Screen {
         ) { padding ->
             when {
                 state.isLoading && state.models.isEmpty() -> LoadingView()
-                !state.isLoading && state.models.isEmpty() -> EmptyView(
-                    stringResource(Res.string.empty_running)
-                )
                 state.error != null -> ErrorView(
                     error = state.error,
                     onRetry = { viewModel.onIntent(RunningIntent.Refresh) }
+                )
+                !state.isLoading && state.models.isEmpty() -> EmptyView(
+                    stringResource(Res.string.empty_running)
                 )
                 else -> RunningModelsList(
                     models = state.models,

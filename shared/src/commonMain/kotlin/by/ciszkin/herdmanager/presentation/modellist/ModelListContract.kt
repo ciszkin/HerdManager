@@ -1,5 +1,6 @@
 package by.ciszkin.herdmanager.presentation.modellist
 
+import by.ciszkin.herdmanager.domain.error.AppError
 import by.ciszkin.herdmanager.domain.model.OllamaModel
 import by.ciszkin.herdmanager.presentation.architecture.MviEffect
 import by.ciszkin.herdmanager.presentation.architecture.MviIntent
@@ -18,12 +19,12 @@ data class ModelListState(
 
     val isDeleting: Boolean = false,
     val modelToDelete: String? = null,
-    val error: String? = null
+    val error: AppError? = null
 ) : MviState
 
 sealed interface ModelListEffect : MviEffect {
     data object ShowModelDeletionSuccess : ModelListEffect
     data object ShowModelDeletionFailure : ModelListEffect
-    data class ShowToast(val message: String) : ModelListEffect
+    data class ShowToast(val error: AppError) : ModelListEffect
     data class ShowDeleteConfirmation(val modelName: String) : ModelListEffect
 }

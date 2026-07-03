@@ -19,7 +19,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -29,6 +28,7 @@ import org.koin.compose.koinInject
 import by.ciszkin.herdmanager.domain.model.PullResult
 import by.ciszkin.herdmanager.presentation.components.EmptyView
 import by.ciszkin.herdmanager.presentation.components.ErrorView
+import by.ciszkin.herdmanager.presentation.error.toUserMessageString
 import by.ciszkin.herdmanager.presentation.components.HerdTopBar
 import by.ciszkin.herdmanager.presentation.components.LoadingView
 import by.ciszkin.herdmanager.presentation.components.VerticalScrollbarWithStyle
@@ -37,7 +37,6 @@ import cafe.adriel.voyager.core.screen.Screen
 import herdmanager.shared.generated.resources.Res
 import herdmanager.shared.generated.resources.empty_registry
 import herdmanager.shared.generated.resources.registry
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,7 +57,6 @@ object RegistryScreen : Screen {
         val state by viewModel.state.collectAsState()
         val gridState = rememberLazyGridState()
         val snackbarHostState = remember { SnackbarHostState() }
-        val coroutineScope = rememberCoroutineScope()
 
         var showPullDialog by remember { mutableStateOf<Boolean>(false) }
 
@@ -81,17 +79,10 @@ object RegistryScreen : Screen {
         LaunchedEffect(viewModel.effect) {
             viewModel.effect.collect { effect ->
                 when (effect) {
-                    is RegistryEffect.ShowToast -> {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(effect.message)
-                        }
-                    }
-
-                    is RegistryEffect.ScrollToTop -> {
-                        launch {
-                            gridState.animateScrollToItem(0)
-                        }
-                    }
+                    is RegistryEffect.ShowToast ->
+                        snackbarHostState.showSnackbar(effect.error.toUserMessageString())
+                    is RegistryEffect.ScrollToTop ->
+                        gridState.animateScrollToItem(0)
                 }
             }
         }
@@ -127,16 +118,15 @@ object RegistryScreen : Screen {
                     state.isLoading -> {
                         LoadingView()
                     }
-                    !state.isLoading && state.models.isEmpty() -> {
-                        EmptyView(
-                            stringResource(Res.string.empty_registry),
-                        )
-                    }
-
                     state.error != null -> {
                         ErrorView(
                             error = state.error,
                             onRetry = { viewModel.onIntent(RegistryIntent.Retry) },
+                        )
+                    }
+                    !state.isLoading && state.models.isEmpty() -> {
+                        EmptyView(
+                            stringResource(Res.string.empty_registry),
                         )
                     }
 

@@ -95,4 +95,16 @@
     <string name="close">Закрыць</string>
     <string name="confirm">Пацвердзіць</string>
     <string name="success">Паспяхова</string>
+
+    <!-- Памылкі -->
+    <string name="error_network_timeout">Таймаўт запыту. Праверце падключэнне.</string>
+    <string name="error_network_connection">Не ўдалося падключыцца да сервера.</string>
+    <string name="error_http_client_error">Некарэктны запыт. Паспрабуйце зноў.</string>
+    <string name="error_http_server_error">Памылка сервера. Паспрабуйце пазней.</string>
+    <string name="error_http_unknown">Адбылася памылка HTTP.</string>
+    <string name="error_server_ollama_unavailable">Сервер Ollama не адказвае. Запусціце яго і паспрабуйце зноў.</string>
+    <string name="error_server_model_not_found">Мадэль не знойдзена на серверы.</string>
+    <string name="error_data_parsing">Не ўдалося апрацаваць адказ сервера.</string>
+    <string name="error_data_validation">Атрыманы некарэктныя дадзеныя.</string>
+    <string name="error_unexpected">Нешта пайшло не так. Паспрабуйце зноў пазней.</string>
 </resources>

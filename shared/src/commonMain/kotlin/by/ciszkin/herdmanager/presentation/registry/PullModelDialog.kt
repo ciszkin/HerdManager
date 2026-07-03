@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import by.ciszkin.herdmanager.domain.model.PullResult
+import by.ciszkin.herdmanager.presentation.error.toUserMessage
 import herdmanager.shared.generated.resources.Res
 import herdmanager.shared.generated.resources.pull
 import herdmanager.shared.generated.resources.cancel
@@ -97,7 +99,7 @@ fun PullModelDialog(
                         label = { Text(stringResource(Res.string.size)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true)
                             .fillMaxWidth(),
                         enabled = !isPulling
                     )
@@ -206,7 +208,7 @@ fun PullModelDialog(
                     }
                     is PullResult.Error -> {
                         Text(
-                            text = pullResult.message,
+                            text = pullResult.error.toUserMessage(),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.error

@@ -1,8 +1,12 @@
 package by.ciszkin.herdmanager
 
 import android.content.ComponentName
+import android.content.Intent
 import android.content.res.Configuration
+import android.os.Build.VERSION
+import android.os.Build.VERSION_CODES
 import android.os.Bundle
+import android.util.Log
 import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,10 +15,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
 import by.ciszkin.herdmanager.di.mainActivityComponentName
-import by.ciszkin.herdmanager.di.provideApplicationContext
 import by.ciszkin.herdmanager.domain.model.ThemeMode
 import by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase
-import kotlinx.coroutines.flow.first
+import by.ciszkin.herdmanager.presentation.settings.AvailableLanguage
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -28,13 +35,27 @@ class MainActivity : ComponentActivity(), KoinComponent {
 
         lifecycleScope.launch {
             val observeSettingsUseCase: ObserveSettingsUseCase by inject()
-            val settings = observeSettingsUseCase().first()
-            setLocale(settings.language)
-            setSystemBarAppearance(settings.themeMode)
+            val settings = observeSettingsUseCase()
 
-            setContent {
-                App()
+            launch {
+                settings
+                    .map { it.themeMode }
+                    .distinctUntilChanged()
+                    .collect(::setSystemBarAppearance)
             }
+
+            launch {
+                settings
+                    .map { it.language }
+                    .distinctUntilChanged()
+                    .drop(1)
+                    .filter { getCurrentLocaleCode() != it }
+                    .collect { recreateActivity() }
+            }
+        }
+
+        setContent {
+            App()
         }
     }
 
@@ -48,7 +69,7 @@ class MainActivity : ComponentActivity(), KoinComponent {
             }
         }
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+        if (VERSION.SDK_INT >= VERSION_CODES.R) {
             window.insetsController?.setSystemBarsAppearance(
                 if (isDarkTheme) 0 else WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
                 WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
@@ -64,18 +85,32 @@ class MainActivity : ComponentActivity(), KoinComponent {
             }
         }
     }
-
-    private fun setLocale(language: String) {
-        val locale = when (language) {
-            "be" -> Locale("be")
-            else -> Locale("en")
+    private fun recreateActivity() {
+        try {
+            val componentName = mainActivityComponentName
+            if (componentName == null) {
+                Log.w("MainActivity", "ComponentName not set. Cannot recreate activity.")
+                return
+            }
+            val intent = Intent().apply {
+                component = componentName
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        Locale.setDefault(locale)
+    }
 
-        val context = provideApplicationContext()
-        val config = Configuration(context.resources.configuration)
-        config.setLocale(locale)
-        context.createConfigurationContext(config)
+    private fun getCurrentLocaleCode(): String {
+        val config = resources.configuration
+        val locale = if (VERSION.SDK_INT >= VERSION_CODES.N) {
+            config.locales.get(0) ?: Locale.getDefault()
+        } else {
+            @Suppress("DEPRECATION")
+            config.locale ?: Locale.getDefault()
+        }
+        return AvailableLanguage.fromCode(locale.language).code
     }
 }
 

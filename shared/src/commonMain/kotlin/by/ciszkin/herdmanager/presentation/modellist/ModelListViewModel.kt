@@ -1,5 +1,6 @@
 package by.ciszkin.herdmanager.presentation.modellist
 
+import by.ciszkin.herdmanager.domain.error.mapper.toAppError
 import by.ciszkin.herdmanager.domain.usecase.DeleteModelUseCase
 import by.ciszkin.herdmanager.domain.usecase.GetModelsUseCase
 import by.ciszkin.herdmanager.presentation.architecture.BaseMviViewModel
@@ -27,7 +28,7 @@ class ModelListViewModel(
             reduceState { copy(isLoading = true, error = null) }
             getModelsUseCase()
                 .onSuccess { models -> reduceState { copy(models = models, isLoading = false) } }
-                .onFailure { error -> reduceState { copy(error = error.message, isLoading = false) } }
+                .onFailure { error -> reduceState { copy(error = error.toAppError(), isLoading = false) } }
         }
     }
 

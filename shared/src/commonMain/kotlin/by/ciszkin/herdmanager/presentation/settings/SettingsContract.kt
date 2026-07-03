@@ -1,5 +1,6 @@
 package by.ciszkin.herdmanager.presentation.settings
 
+import by.ciszkin.herdmanager.domain.error.AppError
 import by.ciszkin.herdmanager.domain.model.Settings
 import by.ciszkin.herdmanager.domain.model.ThemeMode
 import by.ciszkin.herdmanager.presentation.architecture.MviEffect
@@ -22,7 +23,7 @@ sealed interface SettingsIntent : MviIntent {
 data class SettingsState(
     val settings: Settings? = null,
     val isSaving: Boolean = false,
-    val saveError: String? = null,
+    val saveError: AppError? = null,
     val isDirty: Boolean = false,
     val isNewVersionAvailable: Boolean = false,
     val currentVersion: String? = null,
@@ -31,6 +32,6 @@ data class SettingsState(
 ) : MviState
 
 sealed interface SettingsEffect : MviEffect {
-    data class ShowToast(val message: String) : SettingsEffect
+    data class ShowToast(val error: AppError) : SettingsEffect
     data object SettingsSaved : SettingsEffect
 }

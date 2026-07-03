@@ -27,15 +27,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
-
 import by.ciszkin.herdmanager.domain.model.ThemeMode
 import by.ciszkin.herdmanager.presentation.components.UpdateBanner
+import by.ciszkin.herdmanager.presentation.error.toUserMessage
+import by.ciszkin.herdmanager.presentation.error.toUserMessageString
 import by.ciszkin.herdmanager.util.openUrl
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.model.rememberScreenModel
@@ -80,7 +79,6 @@ object SettingsScreen : Screen {
         }
         val state by viewModel.state.collectAsState()
         val snackbarHostState = remember { SnackbarHostState() }
-        val coroutineScope = rememberCoroutineScope()
         val settingsSavedMessage = stringResource(Res.string.settings_saved)
 
         LaunchedEffect(Unit) {
@@ -90,17 +88,10 @@ object SettingsScreen : Screen {
         LaunchedEffect(viewModel.effect) {
             viewModel.effect.collect { effect ->
                 when (effect) {
-                    is SettingsEffect.ShowToast -> {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(effect.message)
-                        }
-                    }
-
-                    SettingsEffect.SettingsSaved -> {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(settingsSavedMessage)
-                        }
-                    }
+                    is SettingsEffect.ShowToast ->
+                        snackbarHostState.showSnackbar(effect.error.toUserMessageString())
+                    is SettingsEffect.SettingsSaved ->
+                        snackbarHostState.showSnackbar(settingsSavedMessage)
                 }
             }
         }
@@ -264,7 +255,7 @@ object SettingsScreen : Screen {
                 state.saveError?.let { error ->
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = error,
+                        text = error.toUserMessage(),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )

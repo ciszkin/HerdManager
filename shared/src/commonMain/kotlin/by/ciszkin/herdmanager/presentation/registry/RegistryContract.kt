@@ -1,5 +1,6 @@
 package by.ciszkin.herdmanager.presentation.registry
 
+import by.ciszkin.herdmanager.domain.error.AppError
 import by.ciszkin.herdmanager.domain.model.PullResult
 import by.ciszkin.herdmanager.domain.model.RegistryModel
 import by.ciszkin.herdmanager.presentation.architecture.MviEffect
@@ -27,7 +28,7 @@ data class RegistryState(
     val isLoadingMore: Boolean = false,
     val canLoadMore: Boolean = true,
     val currentPage: Int = 1,
-    val error: String? = null,
+    val error: AppError? = null,
     val pullModelName: String? = null,
     val pullResult: PullResult? = null,
     val selectedTag: String? = null,
@@ -35,6 +36,6 @@ data class RegistryState(
 ) : MviState
 
 sealed interface RegistryEffect : MviEffect {
-    data class ShowToast(val message: String) : RegistryEffect
+    data class ShowToast(val error: AppError) : RegistryEffect
     data object ScrollToTop : RegistryEffect
 }
