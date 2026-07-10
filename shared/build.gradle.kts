@@ -57,6 +57,8 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlin.test.junit)
+            implementation(libs.mockk)
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
         }
 
         jvmMain.dependencies {
