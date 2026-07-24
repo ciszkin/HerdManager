@@ -7,6 +7,7 @@ import io.ktor.client.statement.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.qualifier.named
@@ -16,7 +17,7 @@ object OllamaLibraryScraper : KoinComponent {
 
     private val httpClient: HttpClient by inject(named("scraper"))
 
-    suspend fun fetchModels(query: String, page: Int): Result<List<RegistryModel>> = kotlin.runCatching {
+    suspend fun fetchModels(query: String, page: Int): Result<List<RegistryModel>> = runCatching {
         val url = when {
             query.isEmpty() && page == 1 -> BASE_URL
             query.isEmpty() -> "$BASE_URL?page=$page"
@@ -40,50 +41,60 @@ object OllamaLibraryScraper : KoinComponent {
         parseModelsFromHtml(doc)
     }
 
-    private fun parseModelsFromHtml(doc: org.jsoup.nodes.Document): List<RegistryModel> {
-        val modelElements = doc.select("li[x-test-model]")
-        val models = modelElements.mapNotNull { modelElement ->
+    /**
+     * Parses model cards from the ollama.com search page.
+     *
+     * ollama.com removed the `x-test-*` test hooks, so we now anchor on the
+     * `/library/<name>` link inside each card and read the surrounding markup:
+     * the `<h2>` for the name, `p.max-w-lg` for the description, the badges in
+     * `div.flex-wrap` for size tags, and the `p.my-1` stats row for pull count
+     * and last-updated time. Capability badges are no longer rendered on the
+     * listing page, so `capabilities` is always empty here.
+     */
+    internal fun parseModelsFromHtml(doc: Document): List<RegistryModel> {
+        val modelElements = doc.select("li:has(a[href^=\"/library/\"])")
+        return modelElements.mapNotNull { modelElement ->
             try {
-                val linkElement = modelElement.selectFirst("a[href^=/]") ?: return@mapNotNull null
-                val name = linkElement.attr("href").removePrefix("/library/").removePrefix("/i/")
-
-                val titleElement = modelElement.selectFirst("span[x-test-search-response-title]")
+                val linkElement = modelElement.selectFirst("a[href^=\"/library/\"]")
                     ?: return@mapNotNull null
-                val displayName = titleElement.text()
+                val id = linkElement.attr("href").removePrefix("/library/").removePrefix("/i/")
 
-                val descriptionElement = modelElement.selectFirst("div > p")
-                    ?: return@mapNotNull null
-                val description = descriptionElement.text()
+                val displayName = modelElement.selectFirst("h2")?.text()?.takeIf { it.isNotEmpty() } ?: id
 
-                val pullCountText = modelElement.selectFirst("span[x-test-pull-count]")?.text() ?: "0"
-                val pullCount = parsePullCount(pullCountText)
+                val description = modelElement.selectFirst("p.max-w-lg")?.text() ?: ""
 
-                val updatedElement = modelElement.selectFirst("span[x-test-updated]")
-                val updatedAt = updatedElement?.text() ?: ""
+                val sizeTags = modelElement.select("div.flex-wrap > span")
+                    .map { it.text() }
+                    .filter { it.isNotEmpty() }
 
-                val sizeTags = modelElement.select("span[x-test-size]").map { it.text() }
-                val capabilities = modelElement.select("span[x-test-capability]")
-                    .mapNotNull { it.text() }
-                    .toList()
+                var pullCount = 0L
+                var updatedAt: String? = null
+                modelElement.select("p.my-1 > span").forEach { stat ->
+                    val text = stat.text()
+                    when {
+                        "Pulls" in text -> pullCount = parsePullCount(text)
+                        "Updated" in text -> updatedAt = stat.attr("title").ifBlank { null } ?: text
+                    }
+                }
 
                 RegistryModel(
-                    id = name,
+                    id = id,
                     name = displayName,
                     description = description,
                     pullCount = pullCount,
                     tags = sizeTags,
-                    capabilities = capabilities,
-                    updatedAt = updatedAt.takeIf { it.isNotEmpty() }
+                    capabilities = emptyList(),
+                    updatedAt = updatedAt
                 )
             } catch (_: Exception) {
                 null
             }
         }
-        return models
     }
 
-    private fun parsePullCount(text: String): Long {
-        val normalized = text.uppercase().replace(" ", "").replace(",", "")
+    internal fun parsePullCount(text: String): Long {
+        val token = Regex("""[\d,]+(?:\.\d+)?\s*[KkMm]?""").find(text)?.value ?: return 0L
+        val normalized = token.uppercase().replace(" ", "").replace(",", "")
         return when {
             normalized.endsWith("M") -> {
                 normalized.removeSuffix("M").toDoubleOrNull()?.times(1_000_000)?.toLong() ?: 0L
