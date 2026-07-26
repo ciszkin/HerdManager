@@ -10,8 +10,10 @@ class OllamaLibraryScraperTest {
     /**
      * Mirrors the markup ollama.com serves on /search after it removed its
      * `x-test-*` test hooks: a <li> per model wrapping an /library/ link,
-     * an <h2> name, a p.max-w-lg description, blue badges in div.flex-wrap
-     * for size tags, and a p.my-1 stats row for pulls/updated.
+     * an <h2> name, a p.max-w-lg description, color-coded badges in
+     * div.flex-wrap (text-blue-600 = size, text-indigo-600 = capability,
+     * text-cyan-500 = cloud availability flag), and a p.my-1 stats row for
+     * pulls/updated.
      */
     private val sampleHtml = """
         <html><body>
@@ -24,8 +26,12 @@ class OllamaLibraryScraperTest {
               </div>
               <div class="flex flex-col">
                 <div class="flex flex-wrap space-x-2">
-                  <span class="inline-flex bg-[#ddf4ff]">9b</span>
-                  <span class="inline-flex bg-[#ddf4ff]">35b</span>
+                  <span class="inline-flex items-center rounded-md bg-indigo-50 px-2 text-xs font-medium text-indigo-600">vision</span>
+                  <span class="inline-flex items-center rounded-md bg-indigo-50 px-2 text-xs font-medium text-indigo-600">tools</span>
+                  <span class="inline-flex items-center rounded-md bg-indigo-50 px-2 text-xs font-medium text-indigo-600">thinking</span>
+                  <span class="inline-flex items-center rounded-md bg-cyan-50 px-2 text-xs font-medium text-cyan-500">cloud</span>
+                  <span class="inline-flex items-center rounded-md bg-[#ddf4ff] px-2 text-xs font-medium text-blue-600">9b</span>
+                  <span class="inline-flex items-center rounded-md bg-[#ddf4ff] px-2 text-xs font-medium text-blue-600">35b</span>
                 </div>
                 <p class="my-1 flex space-x-5 text-[13px] font-medium text-neutral-500">
                   <span class="flex items-center"><span>287.7K</span><span class="hidden sm:flex">&nbsp;Pulls</span></span>
@@ -67,7 +73,7 @@ class OllamaLibraryScraperTest {
         assertEquals("A self-improving family of open-source models for agentic coding", first.description)
         assertEquals(287_700L, first.pullCount)
         assertEquals(listOf("9b", "35b"), first.tags)
-        assertTrue(first.capabilities.isEmpty(), "Capabilities are no longer exposed on the listing page")
+        assertEquals(listOf("vision", "tools", "thinking"), first.capabilities)
         assertEquals("Jun 27, 2026 8:45 PM UTC", first.updatedAt)
 
         val second = models[1]

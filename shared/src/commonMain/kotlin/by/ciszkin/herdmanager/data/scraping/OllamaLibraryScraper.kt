@@ -46,10 +46,11 @@ object OllamaLibraryScraper : KoinComponent {
      *
      * ollama.com removed the `x-test-*` test hooks, so we now anchor on the
      * `/library/<name>` link inside each card and read the surrounding markup:
-     * the `<h2>` for the name, `p.max-w-lg` for the description, the badges in
-     * `div.flex-wrap` for size tags, and the `p.my-1` stats row for pull count
-     * and last-updated time. Capability badges are no longer rendered on the
-     * listing page, so `capabilities` is always empty here.
+     * the `<h2>` for the name, `p.max-w-lg` for the description, and the
+     * `p.my-1` stats row for pull count and last-updated time. The badges in
+     * `div.flex-wrap` are color-coded: blue (`text-blue-600`) = size tags,
+     * indigo (`text-indigo-600`) = capabilities. Other badges (e.g. the cyan
+     * "cloud" availability flag) are ignored.
      */
     internal fun parseModelsFromHtml(doc: Document): List<RegistryModel> {
         val modelElements = doc.select("li:has(a[href^=\"/library/\"])")
@@ -63,7 +64,11 @@ object OllamaLibraryScraper : KoinComponent {
 
                 val description = modelElement.selectFirst("p.max-w-lg")?.text() ?: ""
 
-                val sizeTags = modelElement.select("div.flex-wrap > span")
+                val sizeTags = modelElement.select("div.flex-wrap > span.text-blue-600")
+                    .map { it.text() }
+                    .filter { it.isNotEmpty() }
+
+                val capabilities = modelElement.select("div.flex-wrap > span.text-indigo-600")
                     .map { it.text() }
                     .filter { it.isNotEmpty() }
 
@@ -83,7 +88,7 @@ object OllamaLibraryScraper : KoinComponent {
                     description = description,
                     pullCount = pullCount,
                     tags = sizeTags,
-                    capabilities = emptyList(),
+                    capabilities = capabilities,
                     updatedAt = updatedAt
                 )
             } catch (_: Exception) {
