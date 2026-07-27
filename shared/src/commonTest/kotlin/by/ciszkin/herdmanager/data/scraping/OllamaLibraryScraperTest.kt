@@ -9,11 +9,16 @@ class OllamaLibraryScraperTest {
 
     /**
      * Mirrors the markup ollama.com serves on /search after it removed its
-     * `x-test-*` test hooks: a <li> per model wrapping an /library/ link,
-     * an <h2> name, a p.max-w-lg description, color-coded badges in
-     * div.flex-wrap (text-blue-600 = size, text-indigo-600 = capability,
-     * text-cyan-500 = cloud availability flag), and a p.my-1 stats row for
-     * pulls/updated.
+     * `x-test-*` test hooks: a <li> per model wrapping a card link (the
+     * `group w-full` anchor), an <h2> name, a p.max-w-lg description,
+     * color-coded badges in div.flex-wrap (text-blue-600 = size,
+     * text-indigo-600 = capability, text-cyan-500 = cloud availability
+     * flag), and a p.my-1 stats row for pulls/updated.
+     *
+     * Library models link to `/library/<name>`; community models link to
+     * `/<user>/<model>`. The same card markup wraps both, so the parser
+     * must pick up community cards too (a search for "bonsai" otherwise
+     * drops every real result).
      */
     private val sampleHtml = """
         <html><body>
@@ -57,15 +62,33 @@ class OllamaLibraryScraperTest {
               </div>
             </a>
           </li>
+          <li class="flex items-baseline border-b border-neutral-200 py-6">
+            <a href="/MobiusDevelopment/Bonsai-27B-Q1_0-gguf" class="group w-full">
+              <div class="flex flex-col mb-1" title="Bonsai-27B-Q1_0-gguf">
+                <h2 class="truncate text-xl font-medium"><span>MobiusDevelopment/Bonsai-27B-Q1_0-gguf</span></h2>
+                <p class="max-w-lg break-words text-neutral-800 text-md">Full 27B-class reasoning in binary transformer weights.</p>
+              </div>
+              <div class="flex flex-col">
+                <div class="flex flex-wrap space-x-2">
+                  <span class="inline-flex my-1 items-center rounded-md bg-indigo-50 px-2 py-[2px] text-xs font-medium text-indigo-600">vision</span>
+                </div>
+                <p class="my-1 flex space-x-5 text-[13px] font-medium text-neutral-500">
+                  <span class="flex items-center"><span>745</span><span class="hidden sm:flex">&nbsp;Pulls</span></span>
+                  <span class="flex items-center"><span>1</span><span class="hidden sm:flex">&nbsp;Tag</span></span>
+                  <span class="flex items-center" title="Jul 20, 2026 8:06 PM UTC"><span class="hidden sm:flex">Updated&nbsp;</span><span>6 days ago</span></span>
+                </p>
+              </div>
+            </a>
+          </li>
         </ul>
         </body></html>
     """.trimIndent()
 
     @Test
-    fun `parses every model card from the current ollama markup`() {
+    fun `parses library and community model cards from the current ollama markup`() {
         val models = OllamaLibraryScraper.parseModelsFromHtml(Jsoup.parse(sampleHtml))
 
-        assertEquals(2, models.size)
+        assertEquals(3, models.size)
 
         val first = models[0]
         assertEquals("ornith", first.id)
@@ -82,6 +105,15 @@ class OllamaLibraryScraperTest {
         assertEquals(1_200_000L, second.pullCount)
         assertTrue(second.tags.isEmpty(), "Models without size badges yield an empty tag list")
         assertEquals("Jun 20, 2026 1:00 PM UTC", second.updatedAt)
+
+        val community = models[2]
+        assertEquals("MobiusDevelopment/Bonsai-27B-Q1_0-gguf", community.id)
+        assertEquals("MobiusDevelopment/Bonsai-27B-Q1_0-gguf", community.name)
+        assertEquals("Full 27B-class reasoning in binary transformer weights.", community.description)
+        assertEquals(745L, community.pullCount)
+        assertTrue(community.tags.isEmpty(), "Community cards with no size badges yield an empty tag list")
+        assertEquals(listOf("vision"), community.capabilities)
+        assertEquals("Jul 20, 2026 8:06 PM UTC", community.updatedAt)
     }
 
     @Test

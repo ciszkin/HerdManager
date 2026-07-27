@@ -44,21 +44,31 @@ object OllamaLibraryScraper : KoinComponent {
     /**
      * Parses model cards from the ollama.com search page.
      *
-     * ollama.com removed the `x-test-*` test hooks, so we now anchor on the
-     * `/library/<name>` link inside each card and read the surrounding markup:
-     * the `<h2>` for the name, `p.max-w-lg` for the description, and the
-     * `p.my-1` stats row for pull count and last-updated time. The badges in
-     * `div.flex-wrap` are color-coded: blue (`text-blue-600`) = size tags,
+     * ollama.com removed the `x-test-*` test hooks, so we anchor on the
+     * `group w-full` card link inside each `<li>` and read the surrounding
+     * markup: the `<h2>` for the name, `p.max-w-lg` for the description, and
+     * the `p.my-1` stats row for pull count and last-updated time. The badges
+     * in `div.flex-wrap` are color-coded: blue (`text-blue-600`) = size tags,
      * indigo (`text-indigo-600`) = capabilities. Other badges (e.g. the cyan
      * "cloud" availability flag) are ignored.
+     *
+     * The same card markup wraps both official library models
+     * (`/library/<name>`) and community models (`/<user>/<model>`), so we match
+     * on the card anchor rather than the `/library/` href — otherwise a search
+     * like "bonsai" drops every community result.
      */
     internal fun parseModelsFromHtml(doc: Document): List<RegistryModel> {
-        val modelElements = doc.select("li:has(a[href^=\"/library/\"])")
+        val modelElements = doc.select("li:has(a.group.w-full)")
         return modelElements.mapNotNull { modelElement ->
             try {
-                val linkElement = modelElement.selectFirst("a[href^=\"/library/\"]")
+                val linkElement = modelElement.selectFirst("a.group.w-full")
                     ?: return@mapNotNull null
-                val id = linkElement.attr("href").removePrefix("/library/").removePrefix("/i/")
+                val href = linkElement.attr("href")
+                val id = when {
+                    href.startsWith("/library/") -> href.removePrefix("/library/")
+                    href.startsWith("/i/") -> href.removePrefix("/i/")
+                    else -> href.removePrefix("/")
+                }
 
                 val displayName = modelElement.selectFirst("h2")?.text()?.takeIf { it.isNotEmpty() } ?: id
 
