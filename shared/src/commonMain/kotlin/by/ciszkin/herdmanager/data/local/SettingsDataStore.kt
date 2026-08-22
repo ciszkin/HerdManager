@@ -18,33 +18,17 @@ fun DataStore<Preferences>.settingsFlow(): Flow<Settings> = this.data.map { pref
     )
 }
 
-suspend fun DataStore<Preferences>.saveServerUrl(url: String) {
+/**
+ * Persists the whole [Settings] in a single transactional edit so a partial
+ * failure cannot leave the preferences in a mixed state.
+ */
+suspend fun DataStore<Preferences>.saveSettings(settings: Settings) {
     edit { preferences ->
-        preferences[PreferencesKeys.SERVER_URL] = url
-    }
-}
-
-suspend fun DataStore<Preferences>.saveRefreshInterval(interval: Int) {
-    edit { preferences ->
-        preferences[PreferencesKeys.REFRESH_INTERVAL] = interval.toLong().coerceIn(1, 60)
-    }
-}
-
-suspend fun DataStore<Preferences>.savePollingEnabled(enabled: Boolean) {
-    edit { preferences ->
-        preferences[PreferencesKeys.POLLING_ENABLED] = enabled
-    }
-}
-
-suspend fun DataStore<Preferences>.saveLanguage(language: String) {
-    edit { preferences ->
-        preferences[PreferencesKeys.LANGUAGE] = language
-    }
-}
-
-suspend fun DataStore<Preferences>.saveThemeMode(themeMode: ThemeMode) {
-    edit { preferences ->
-        preferences[PreferencesKeys.THEME_MODE] = themeMode.value
+        preferences[PreferencesKeys.SERVER_URL] = settings.serverUrl
+        preferences[PreferencesKeys.REFRESH_INTERVAL] = settings.refreshInterval.toLong().coerceIn(1, 60)
+        preferences[PreferencesKeys.POLLING_ENABLED] = settings.pollingEnabled
+        preferences[PreferencesKeys.LANGUAGE] = settings.language
+        preferences[PreferencesKeys.THEME_MODE] = settings.themeMode.value
     }
 }
 
@@ -66,4 +50,14 @@ fun DataStore<Preferences>.currentVersionFlow(): Flow<String?> = this.data.map {
 
 fun DataStore<Preferences>.latestVersionFlow(): Flow<String?> = this.data.map { preferences ->
     preferences[PreferencesKeys.OLLAMA_LATEST_VERSION]
+}
+
+fun DataStore<Preferences>.lastUpdateCheckFlow(): Flow<Long> = this.data.map { preferences ->
+    preferences[PreferencesKeys.LAST_UPDATE_CHECK] ?: 0L
+}
+
+suspend fun DataStore<Preferences>.saveLastUpdateCheck(timestampMillis: Long) {
+    edit { preferences ->
+        preferences[PreferencesKeys.LAST_UPDATE_CHECK] = timestampMillis
+    }
 }

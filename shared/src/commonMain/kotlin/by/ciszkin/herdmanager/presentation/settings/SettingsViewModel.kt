@@ -8,7 +8,6 @@ import by.ciszkin.herdmanager.domain.usecase.SaveSettingsUseCase
 import by.ciszkin.herdmanager.presentation.architecture.BaseMviViewModel
 import by.ciszkin.herdmanager.domain.error.mapper.toAppError
 import cafe.adriel.voyager.core.model.screenModelScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -40,7 +39,6 @@ class SettingsViewModel(
 
     private fun loadSettings() {
         screenModelScope.launch {
-            delay(100)
             observeSettingsUseCase().first().also { settings ->
                 originalSettings = settings
                 currentSettings = settings
@@ -91,8 +89,6 @@ class SettingsViewModel(
     }
 
     private fun saveSettings(settings: Settings) {
-        val previousLanguage = originalSettings?.language
-        val previousTheme = originalSettings?.themeMode
         screenModelScope.launch {
             reduceState { copy(isSaving = true, saveError = null) }
             saveSettingsUseCase(settings)
@@ -134,8 +130,8 @@ class SettingsViewModel(
 
     private fun checkForUpdates() {
         screenModelScope.launch {
-            // First, fetch and save the update data
-            checkForOllamaUpdateUseCase.checkForUpdates()
+            // Fetch and save the update data, throttled to once per day.
+            checkForOllamaUpdateUseCase.refreshIfDue()
 
             // Then, collect the flow to get the values
             checkForOllamaUpdateUseCase().collect { updateInfo ->

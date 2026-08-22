@@ -67,17 +67,20 @@ class VersionComparatorTest {
 
     @Test
     fun `isNewerAvailable handles versions with more than 3 parts`() {
-        assertTrue(VersionComparator.isNewerAvailable("1.0.0", "1.0.1.0"))
+        // Extra numeric parts are ignored (only major.minor.patch matter), not
+        // treated as separate version components.
+        assertFalse(VersionComparator.isNewerAvailable("1.0.0", "1.0.1.0"))
         assertFalse(VersionComparator.isNewerAvailable("1.0.1.0", "1.0.1"))
         assertFalse(VersionComparator.isNewerAvailable("1.0.1", "1.0.1.0"))
     }
 
     @Test
-    fun `isNewerAvailable handles invalid version parts`() {
-        // Non-numeric parts are filtered out by mapNotNull, "1.0.a" becomes [1,0,0]
-        assertFalse(VersionComparator.isNewerAvailable("1.0.0", "1.0.a")) // "1.0.a" becomes [1,0,0], same as "1.0.0"
-        assertTrue(VersionComparator.isNewerAvailable("1.a.0", "1.0.1")) // "1.a.0" becomes [1,0,0]
-        assertFalse(VersionComparator.isNewerAvailable("1.0.a", "1.0.0")) // "1.0.a" becomes [1,0,0], same as "1.0.0"
+    fun `isNewerAvailable never claims an update for unparsable versions`() {
+        // Non-numeric segments make the whole version unparsable: no update claim.
+        assertFalse(VersionComparator.isNewerAvailable("1.0.0", "1.0.a"))
+        assertFalse(VersionComparator.isNewerAvailable("1.a.0", "1.0.1"))
+        assertFalse(VersionComparator.isNewerAvailable("1.0.a", "1.0.0"))
+        assertFalse(VersionComparator.isNewerAvailable("1.0.0", "banana"))
     }
 
     @Test
@@ -88,11 +91,26 @@ class VersionComparatorTest {
     }
 
     @Test
-    fun `isNewerAvailable handles edge cases with pre-release versions`() {
-        // Pre-release suffixes are filtered out by mapNotNull
-        assertFalse(VersionComparator.isNewerAvailable("1.0.0", "1.0.0-alpha")) // "1.0.0-alpha" becomes [1,0,0]
-        assertFalse(VersionComparator.isNewerAvailable("1.0.0-alpha", "1.0.0")) // "1.0.0-alpha" becomes [1,0,0]
-        assertFalse(VersionComparator.isNewerAvailable("1.0.0-beta", "1.0.0-alpha")) // both become [1,0,0]
+    fun `isNewerAvailable treats pre-releases as older than release`() {
+        assertTrue(VersionComparator.isNewerAvailable("1.0.0-alpha", "1.0.0"))
+        assertFalse(VersionComparator.isNewerAvailable("1.0.0", "1.0.0-alpha"))
+        assertFalse(VersionComparator.isNewerAvailable("1.0.0", "1.0.0-rc.1"))
+    }
+
+    @Test
+    fun `isNewerAvailable orders pre-release identifiers semantically`() {
+        assertTrue(VersionComparator.isNewerAvailable("1.0.0-alpha", "1.0.0-beta"))
+        assertTrue(VersionComparator.isNewerAvailable("1.0.0-alpha.1", "1.0.0-alpha.2"))
+        assertTrue(VersionComparator.isNewerAvailable("1.0.0-rc.1", "1.0.0"))
+        assertFalse(VersionComparator.isNewerAvailable("1.0.0-beta", "1.0.0-alpha"))
+        assertFalse(VersionComparator.isNewerAvailable("1.0.0-alpha.2", "1.0.0-alpha.1"))
+    }
+
+    @Test
+    fun `isNewerAvailable ignores build metadata`() {
+        assertFalse(VersionComparator.isNewerAvailable("1.0.0+build.5", "1.0.0+build.9"))
+        assertFalse(VersionComparator.isNewerAvailable("1.0.0", "1.0.0+build.1"))
+        assertTrue(VersionComparator.isNewerAvailable("1.0.0+old", "1.0.1+new"))
     }
 
     @Test

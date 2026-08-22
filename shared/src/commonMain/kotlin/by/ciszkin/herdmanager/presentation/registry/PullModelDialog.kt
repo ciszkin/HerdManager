@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import by.ciszkin.herdmanager.domain.model.PullResult
 import by.ciszkin.herdmanager.presentation.error.toUserMessage
+import by.ciszkin.herdmanager.utils.formatSize
 import herdmanager.shared.generated.resources.Res
 import herdmanager.shared.generated.resources.pull
 import herdmanager.shared.generated.resources.cancel
@@ -162,7 +163,7 @@ fun PullModelDialog(
                                             color = MaterialTheme.colorScheme.primary
                                         )
                                         Text(
-                                            text = "${formatBytes(currentProgress.completed ?: 0)} / ${formatBytes(currentProgress.total ?: 0)}",
+                                            text = "${formatSize(currentProgress.completed ?: 0)} / ${formatSize(currentProgress.total ?: 0)}",
                                             style = MaterialTheme.typography.bodySmall
                                         )
                                     }
@@ -240,13 +241,4 @@ fun PullModelDialog(
             }
         }
     )
-}
-
-private fun formatBytes(bytes: Long): String {
-    return when {
-        bytes >= 1_073_741_824L -> "%.2f GB".format(bytes / 1_073_741_824.0)
-        bytes >= 1_048_576L -> "%.2f MB".format(bytes / 1_048_576.0)
-        bytes >= 1_024L -> "%.2f KB".format(bytes / 1_024.0)
-        else -> "$bytes B"
-    }
 }

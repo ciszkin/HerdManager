@@ -12,4 +12,5 @@ object PreferencesKeys {
     val THEME_MODE = stringPreferencesKey("theme_mode")
     val OLLAMA_CURRENT_VERSION = stringPreferencesKey("ollama_current_version")
     val OLLAMA_LATEST_VERSION = stringPreferencesKey("ollama_latest_version")
+    val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
 }

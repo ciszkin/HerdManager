@@ -1,49 +1,67 @@
 package by.ciszkin.herdmanager.domain.util
 
 object VersionComparator {
+
+    private val VERSION_REGEX =
+        Regex("""v?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?""")
+
     /**
-     * Compares two semantic version strings.
-     * Returns true if currentVersion is less than latestVersion.
-     * Handles 'v' prefix (e.g., "v0.5.7" -> "0.5.7").
+     * Returns true when [currentVersion] is an older release than [latestVersion].
+     * Handles an optional `v` prefix, missing trailing parts (padded to 0),
+     * pre-release identifiers (`-alpha`, `-rc.1` …) and build metadata (`+build`,
+     * ignored for precedence). Unparsable versions never claim an update.
      */
     fun isNewerAvailable(currentVersion: String?, latestVersion: String?): Boolean {
-        if (currentVersion == null || latestVersion == null || currentVersion.isEmpty() || latestVersion.isEmpty()) return false
-
-        val current = parseVersion(currentVersion)
-        val latest = parseVersion(latestVersion)
-
-        // Pad versions with zeros if they have fewer than 3 parts
-        val paddedCurrent = current + List(3 - current.size) { 0 }
-        val paddedLatest = latest + List(3 - latest.size) { 0 }
-
-        // Compare each version part
-        for (i in 0 until 3) {
-            val currentPart = paddedCurrent[i]
-            val latestPart = paddedLatest[i]
-
-            if (currentPart < latestPart) {
-                return true
-            } else if (currentPart > latestPart) {
-                return false
-            }
-        }
-
-        // All parts are equal
-        return false
+        if (currentVersion.isNullOrEmpty() || latestVersion.isNullOrEmpty()) return false
+        val current = parseVersion(currentVersion) ?: return false
+        val latest = parseVersion(latestVersion) ?: return false
+        return compare(current, latest) < 0
     }
 
-    private fun parseVersion(version: String): List<Int> {
-        // Remove 'v' prefix if present
-        val cleanVersion = version.removePrefix("v")
+    private data class Semver(
+        val parts: List<Int>,
+        val preRelease: List<String>
+    )
 
-        // Handle empty string case
-        if (cleanVersion.isEmpty()) {
-            return listOf(0, 0, 0)
+    private fun parseVersion(version: String): Semver? {
+        val match = VERSION_REGEX.matchEntire(version.trim()) ?: return null
+        val parts = (1..3).map { match.groupValues[it].ifEmpty { "0" }.toInt() }
+        val preRelease = match.groupValues[4].takeIf { it.isNotEmpty() }?.split(".") ?: emptyList()
+        return Semver(parts, preRelease)
+    }
+
+    /**
+     * Semver precedence:
+     * - numeric core parts compare first (larger = newer)
+     * - a release beats any pre-release of the same core
+     * - pre-release identifiers compare in order: numeric < alphanumeric,
+     *   numerics numerically, alphanumerics lexically; shorter list wins when a
+     *   prefix matches
+     */
+    private fun compare(a: Semver, b: Semver): Int {
+        for (i in 0..2) {
+            val cmp = a.parts[i].compareTo(b.parts[i])
+            if (cmp != 0) return cmp
         }
+        if (a.preRelease.isEmpty() && b.preRelease.isEmpty()) return 0
+        if (a.preRelease.isEmpty()) return 1
+        if (b.preRelease.isEmpty()) return -1
+        val common = minOf(a.preRelease.size, b.preRelease.size)
+        for (i in 0 until common) {
+            val cmp = compareIdentifier(a.preRelease[i], b.preRelease[i])
+            if (cmp != 0) return cmp
+        }
+        return a.preRelease.size.compareTo(b.preRelease.size)
+    }
 
-        // Split by '.' and convert to integers
-        return cleanVersion.split('.')
-            .mapNotNull { it.toIntOrNull() }
-            .take(3) // Only take major, minor, patch
+    private fun compareIdentifier(x: String, y: String): Int {
+        val xNum = x.toIntOrNull()
+        val yNum = y.toIntOrNull()
+        return when {
+            xNum != null && yNum != null -> xNum.compareTo(yNum)
+            xNum != null -> -1
+            yNum != null -> 1
+            else -> x.compareTo(y)
+        }
     }
 }

@@ -6,7 +6,7 @@ import by.ciszkin.herdmanager.domain.usecase.CheckForOllamaUpdateUseCase
 import by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase
 import by.ciszkin.herdmanager.domain.usecase.SaveSettingsUseCase
 import by.ciszkin.herdmanager.domain.repository.SettingsRepository
-import io.mockk.coJustRun
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -85,7 +85,7 @@ class SettingsViewModelTest {
     private fun createUpdateUseCaseStub(): CheckForOllamaUpdateUseCase {
         val stub = mockk<CheckForOllamaUpdateUseCase>()
         every { stub.invoke() } returns emptyFlow()
-        coJustRun { stub.checkForUpdates() }
+        coEvery { stub.refreshIfDue() } returns true
         return stub
     }
 

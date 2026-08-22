@@ -24,24 +24,27 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import org.koin.compose.koinInject
 import by.ciszkin.herdmanager.domain.model.PullResult
 import by.ciszkin.herdmanager.presentation.components.EmptyView
 import by.ciszkin.herdmanager.presentation.components.ErrorView
-import by.ciszkin.herdmanager.presentation.error.toUserMessageString
 import by.ciszkin.herdmanager.presentation.components.HerdTopBar
 import by.ciszkin.herdmanager.presentation.components.LoadingView
 import by.ciszkin.herdmanager.presentation.components.VerticalScrollbarWithStyle
+import by.ciszkin.herdmanager.presentation.error.toUserMessageString
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import herdmanager.shared.generated.resources.Res
 import herdmanager.shared.generated.resources.empty_registry
 import herdmanager.shared.generated.resources.registry
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 object RegistryScreen : Screen {
     private fun readResolve(): Any = RegistryScreen
+
+    private const val SEARCH_DEBOUNCE_MS = 300L
 
     @Composable
     override fun Content() {
@@ -59,6 +62,19 @@ object RegistryScreen : Screen {
         val snackbarHostState = remember { SnackbarHostState() }
 
         var showPullDialog by remember { mutableStateOf<Boolean>(false) }
+
+        // Local query text gives instant typing feedback; the network search is
+        // debounced so each keystroke doesn't fire a request.
+        var searchText by remember { mutableStateOf(state.searchQuery) }
+        var searchInitialized by remember { mutableStateOf(false) }
+        LaunchedEffect(searchText) {
+            if (!searchInitialized) {
+                searchInitialized = true
+                return@LaunchedEffect
+            }
+            delay(SEARCH_DEBOUNCE_MS)
+            viewModel.onIntent(RegistryIntent.SearchModels(searchText))
+        }
 
         LaunchedEffect(gridState) {
             snapshotFlow {
@@ -106,9 +122,10 @@ object RegistryScreen : Screen {
         ) { padding ->
             Column(modifier = Modifier.padding(padding)) {
                 SearchBar(
-                    query = state.searchQuery,
-                    onQueryChange = { viewModel.onIntent(RegistryIntent.SearchModels(it)) },
-                    onClear = { viewModel.onIntent(RegistryIntent.ClearSearch) },
+                    query = searchText,
+                    onQueryChange = { searchText = it },
+                    onClear = { searchText = "" },
+                    onSearch = { viewModel.onIntent(RegistryIntent.SearchModels(searchText)) },
                     isLoading = state.isSearching,
                     modifier = Modifier
                             .fillMaxWidth()

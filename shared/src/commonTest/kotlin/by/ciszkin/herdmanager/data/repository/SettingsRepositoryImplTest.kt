@@ -2,11 +2,7 @@ package by.ciszkin.herdmanager.data.repository
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import by.ciszkin.herdmanager.data.local.saveLanguage
-import by.ciszkin.herdmanager.data.local.savePollingEnabled
-import by.ciszkin.herdmanager.data.local.saveRefreshInterval
-import by.ciszkin.herdmanager.data.local.saveServerUrl
-import by.ciszkin.herdmanager.data.local.saveThemeMode
+import by.ciszkin.herdmanager.data.local.saveSettings
 import by.ciszkin.herdmanager.data.local.settingsFlow
 import by.ciszkin.herdmanager.domain.error.AppException
 import by.ciszkin.herdmanager.domain.error.UnexpectedError
@@ -79,7 +75,7 @@ class SettingsRepositoryImplTest {
         // Given - need to mock the extension functions
         mockkStatic(SETTINGS_DATASTORE_KT)
         val exception = RuntimeException("DataStore error")
-        coEvery { mockDataStore.saveServerUrl(any()) } throws exception
+        coEvery { mockDataStore.saveSettings(any()) } throws exception
 
         // When
         val result = repository.saveSettings(testSettings)
@@ -98,8 +94,7 @@ class SettingsRepositoryImplTest {
         // Given - need to mock the extension functions
         mockkStatic(SETTINGS_DATASTORE_KT)
         val exception = IllegalStateException("Invalid interval")
-        coEvery { mockDataStore.saveServerUrl(any()) } just Runs
-        coEvery { mockDataStore.saveRefreshInterval(any()) } throws exception
+        coEvery { mockDataStore.saveSettings(any()) } throws exception
 
         // When
         val result = repository.saveSettings(testSettings)
@@ -118,9 +113,7 @@ class SettingsRepositoryImplTest {
         // Given - need to mock the extension functions
         mockkStatic(SETTINGS_DATASTORE_KT)
         val exception = IllegalArgumentException("Invalid argument")
-        coEvery { mockDataStore.saveServerUrl(any()) } just Runs
-        coEvery { mockDataStore.saveRefreshInterval(any()) } just Runs
-        coEvery { mockDataStore.savePollingEnabled(any()) } throws exception
+        coEvery { mockDataStore.saveSettings(any()) } throws exception
 
         // When
         val result = repository.saveSettings(testSettings)
@@ -175,21 +168,13 @@ class SettingsRepositoryImplTest {
     fun `saveSettings calls edit on DataStore`() = runTest {
         // Given - need to mock the extension functions to verify calls
         mockkStatic(SETTINGS_DATASTORE_KT)
-        coEvery { mockDataStore.saveServerUrl(any()) } just Runs
-        coEvery { mockDataStore.saveRefreshInterval(any()) } just Runs
-        coEvery { mockDataStore.savePollingEnabled(any()) } just Runs
-        coEvery { mockDataStore.saveLanguage(any()) } just Runs
-        coEvery { mockDataStore.saveThemeMode(any()) } just Runs
+        coEvery { mockDataStore.saveSettings(any()) } just Runs
 
         // When
         repository.saveSettings(testSettings)
 
-        // Then - verify all save operations were called
-        coVerify { mockDataStore.saveServerUrl(any()) }
-        coVerify { mockDataStore.saveRefreshInterval(any()) }
-        coVerify { mockDataStore.savePollingEnabled(any()) }
-        coVerify { mockDataStore.saveLanguage(any()) }
-        coVerify { mockDataStore.saveThemeMode(any()) }
+        // Then - a single atomic transaction is used instead of per-key writes
+        coVerify(exactly = 1) { mockDataStore.saveSettings(testSettings) }
 
         unmockkStatic(SETTINGS_DATASTORE_KT)
     }

@@ -25,6 +25,7 @@ fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onClear: () -> Unit,
+    onSearch: () -> Unit = {},
     isLoading: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -58,7 +59,7 @@ fun SearchBar(
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(
-            onSearch = {  }
+            onSearch = { onSearch() }
         ),
         modifier = modifier
     )

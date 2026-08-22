@@ -6,6 +6,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +32,11 @@ fun App() {
 
     val settings by observeSettingsUseCase().collectAsState(initial = null)
     val updateInfo by checkForOllamaUpdateUseCase().collectAsState(initial = null)
+
+    // Refresh update info at startup, throttled to once per day.
+    LaunchedEffect(Unit) {
+        checkForOllamaUpdateUseCase.refreshIfDue()
+    }
 
     val isDarkTheme = when (settings?.themeMode) {
         ThemeMode.LIGHT -> false

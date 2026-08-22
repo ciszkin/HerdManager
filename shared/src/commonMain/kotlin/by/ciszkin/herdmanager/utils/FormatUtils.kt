@@ -16,16 +16,32 @@ fun formatSize(bytes: Long): String {
     }
 }
 
+/**
+ * Formats an ISO-8601 instant for display in the local time zone.
+ * Tolerates the variable precision Ollama can emit (with/without millis and
+ * with `Z` or a numeric offset); falls back to the raw string on failure.
+ */
 fun formatDate(isoString: String): String {
-    return try {
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.getDefault())
-        inputFormat.timeZone = TimeZone.getTimeZone("UTC")
-        val date = inputFormat.parse(isoString) ?: return isoString
+    val inputFormats = listOf(
+        "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+        "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+        "yyyy-MM-dd'T'HH:mm:ssXXX",
+        "yyyy-MM-dd'T'HH:mm:ssX",
+        "yyyy-MM-dd'T'HH:mm:ss"
+    )
 
-        val outputFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-        outputFormat.timeZone = TimeZone.getDefault()
-        outputFormat.format(date)
-    } catch (_: Exception) {
-        isoString
+    val outputFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+    outputFormat.timeZone = TimeZone.getDefault()
+
+    for (pattern in inputFormats) {
+        try {
+            val inputFormat = SimpleDateFormat(pattern, Locale.getDefault())
+            inputFormat.timeZone = TimeZone.getTimeZone("UTC")
+            val date = inputFormat.parse(isoString) ?: continue
+            return outputFormat.format(date)
+        } catch (_: Exception) {
+            // try the next pattern
+        }
     }
+    return isoString
 }

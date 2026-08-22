@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import by.ciszkin.herdmanager.domain.model.RunningModel
+import by.ciszkin.herdmanager.utils.formatSize
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.Cpu
 import compose.icons.feathericons.HardDrive
@@ -92,14 +93,5 @@ fun RunningModelCard(
                 }
             }
         }
-    }
-}
-
-fun formatSize(bytes: Long): String {
-    return when {
-        bytes >= 1024 * 1024 * 1024 -> "%.1f GB".format(bytes / (1024.0 * 1024.0 * 1024.0))
-        bytes >= 1024 * 1024 -> "%.1f MB".format(bytes / (1024.0 * 1024.0))
-        bytes >= 1024 -> "%.1f KB".format(bytes / 1024.0)
-        else -> "$bytes B"
     }
 }
