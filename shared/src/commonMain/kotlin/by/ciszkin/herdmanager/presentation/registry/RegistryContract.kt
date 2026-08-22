@@ -20,7 +20,6 @@ sealed interface RegistryIntent : MviIntent {
 }
 
 data class RegistryState(
-    val allModels: List<RegistryModel> = emptyList(),
     val models: List<RegistryModel> = emptyList(),
     val searchQuery: String = "",
     val isLoading: Boolean = false,

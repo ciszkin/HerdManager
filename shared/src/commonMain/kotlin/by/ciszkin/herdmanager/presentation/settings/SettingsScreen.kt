@@ -34,7 +34,6 @@ import org.koin.compose.koinInject
 import by.ciszkin.herdmanager.domain.model.ThemeMode
 import by.ciszkin.herdmanager.presentation.components.UpdateBanner
 import by.ciszkin.herdmanager.presentation.error.toUserMessage
-import by.ciszkin.herdmanager.presentation.error.toUserMessageString
 import by.ciszkin.herdmanager.util.openUrl
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.model.rememberScreenModel
@@ -88,8 +87,6 @@ object SettingsScreen : Screen {
         LaunchedEffect(viewModel.effect) {
             viewModel.effect.collect { effect ->
                 when (effect) {
-                    is SettingsEffect.ShowToast ->
-                        snackbarHostState.showSnackbar(effect.error.toUserMessageString())
                     is SettingsEffect.SettingsSaved ->
                         snackbarHostState.showSnackbar(settingsSavedMessage)
                 }

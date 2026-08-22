@@ -18,7 +18,6 @@ import by.ciszkin.herdmanager.domain.model.OllamaModel
 import by.ciszkin.herdmanager.presentation.components.EmptyView
 import by.ciszkin.herdmanager.presentation.components.HerdTopBar
 import by.ciszkin.herdmanager.presentation.components.ErrorView
-import by.ciszkin.herdmanager.presentation.error.toUserMessageString
 import by.ciszkin.herdmanager.presentation.components.LoadingView
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.model.rememberScreenModel
@@ -57,8 +56,6 @@ object ModelListScreen : Screen {
         LaunchedEffect(viewModel.effect) {
             viewModel.effect.collect { effect ->
                 when (effect) {
-                    is ModelListEffect.ShowToast ->
-                        snackbarHostState.showSnackbar(effect.error.toUserMessageString())
                     is ModelListEffect.ShowModelDeletionSuccess ->
                         snackbarHostState.showSnackbar(modelDeletionSuccessMessage)
                     is ModelListEffect.ShowModelDeletionFailure ->

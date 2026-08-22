@@ -42,11 +42,7 @@ class RunningViewModel(
                 }
 
                 if (pollingEnabled) {
-                    if (isActive) {
-                        startPolling()
-                    } else {
-                        stopPolling()
-                    }
+                    startPolling()
                 } else {
                     stopPolling()
                 }

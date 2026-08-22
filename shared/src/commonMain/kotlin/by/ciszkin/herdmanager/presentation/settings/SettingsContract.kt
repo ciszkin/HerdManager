@@ -32,6 +32,5 @@ data class SettingsState(
 ) : MviState
 
 sealed interface SettingsEffect : MviEffect {
-    data class ShowToast(val error: AppError) : SettingsEffect
     data object SettingsSaved : SettingsEffect
 }
