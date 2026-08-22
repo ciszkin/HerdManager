@@ -126,6 +126,101 @@ class OllamaLibraryScraperTest {
     }
 
     @Test
+    fun `detects genuine empty search results via no models found indicator`() {
+        val emptyResultsPage = Jsoup.parse(
+            """
+            <html><body>
+            <ul role="list" class="grid grid-cols-1">
+              <li class="flex py-6 px-2 text-neutral-500">No models found.</li>
+            </ul>
+            </body></html>
+            """.trimIndent()
+        )
+
+        assertTrue(OllamaLibraryScraper.hasNoResultsIndicator(emptyResultsPage))
+    }
+
+    @Test
+    fun `does not treat a challenge or markup-changed page as empty results`() {
+        val challengePage = Jsoup.parse(
+            """
+            <html><body>
+            <div class="challenge">
+              <h1>Just a moment...</h1>
+              <p>Checking your browser before accessing.</p>
+            </div>
+            </body></html>
+            """.trimIndent()
+        )
+
+        assertTrue(OllamaLibraryScraper.parseModelsFromHtml(challengePage).isEmpty())
+        assertTrue(!OllamaLibraryScraper.hasNoResultsIndicator(challengePage))
+    }
+
+    @Test
+    fun `parses library cards via fallback selector when primary card anchor is missing`() {
+        // Simulates markup churn: the li cards exist and link to /library/, but
+        // the `group w-full` anchor class is gone.
+        val legacyMarkup = Jsoup.parse(
+            """
+            <html><body>
+            <ul role="list" class="grid grid-cols-1">
+              <li class="flex items-baseline border-b border-neutral-200 py-6">
+                <a href="/library/ornith">
+                  <div class="flex flex-col mb-1">
+                    <h2 class="truncate text-xl font-medium"><span>ornith</span></h2>
+                    <p class="max-w-lg break-words text-neutral-800 text-md">A self-improving model.</p>
+                  </div>
+                  <div class="flex flex-col">
+                    <div class="flex flex-wrap space-x-2">
+                      <span class="inline-flex my-1 items-center rounded-md bg-[#ddf4ff] px-2 py-[2px] text-xs font-medium text-blue-600">9b</span>
+                    </div>
+                    <p class="my-1 flex space-x-5 text-[13px] font-medium text-neutral-500">
+                      <span class="flex items-center"><span>287.7K</span><span class="hidden sm:flex">&nbsp;Pulls</span></span>
+                    </p>
+                  </div>
+                </a>
+              </li>
+            </ul>
+            </body></html>
+            """.trimIndent()
+        )
+
+        val models = OllamaLibraryScraper.parseModelsFromHtml(legacyMarkup)
+
+        assertEquals(1, models.size)
+        assertEquals("ornith", models[0].id)
+        assertEquals("A self-improving model.", models[0].description)
+        assertEquals(287_700L, models[0].pullCount)
+    }
+
+    @Test
+    fun `parses community cards via i-slash fallback when primary card anchor is missing`() {
+        val slashMarkup = Jsoup.parse(
+            """
+            <html><body>
+            <ul role="list" class="grid grid-cols-1">
+              <li class="flex items-baseline border-b border-neutral-200 py-6">
+                <a href="/i/MobiusDevelopment-Bonsai-27B-Q1_0">
+                  <div class="flex flex-col mb-1">
+                    <h2 class="truncate text-xl font-medium"><span>MobiusDevelopment/Bonsai-27B</span></h2>
+                    <p class="max-w-lg break-words text-neutral-800 text-md">Full 27B-class reasoning.</p>
+                  </div>
+                </a>
+              </li>
+            </ul>
+            </body></html>
+            """.trimIndent()
+        )
+
+        val models = OllamaLibraryScraper.parseModelsFromHtml(slashMarkup)
+
+        assertEquals(1, models.size)
+        assertEquals("MobiusDevelopment-Bonsai-27B-Q1_0", models[0].id)
+        assertEquals("MobiusDevelopment/Bonsai-27B", models[0].name)
+    }
+
+    @Test
     fun `parsePullCount handles K, M and plain numbers`() {
         assertEquals(287_700L, OllamaLibraryScraper.parsePullCount("287.7K Pulls"))
         assertEquals(1_200_000L, OllamaLibraryScraper.parsePullCount("1.2M Pulls"))

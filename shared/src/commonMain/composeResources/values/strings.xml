@@ -107,5 +107,6 @@
     <string name="error_server_model_not_found">Model not found on server.</string>
     <string name="error_data_parsing">Failed to process server response.</string>
     <string name="error_data_validation">Invalid data received.</string>
+    <string name="error_registry_parse">The model registry page could not be read. It may have changed — please try again later.</string>
     <string name="error_unexpected">Something went wrong. Please try again later.</string>
 </resources>

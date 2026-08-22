@@ -7,6 +7,7 @@ import by.ciszkin.herdmanager.domain.error.HttpError
 import by.ciszkin.herdmanager.domain.error.ModelNotFoundError
 import by.ciszkin.herdmanager.domain.error.OllamaUnavailableError
 import by.ciszkin.herdmanager.domain.error.ParsingError
+import by.ciszkin.herdmanager.domain.error.RegistryParseError
 import by.ciszkin.herdmanager.domain.error.TimeoutError
 import by.ciszkin.herdmanager.domain.error.ValidationError
 import by.ciszkin.herdmanager.domain.error.UnexpectedError
@@ -18,6 +19,7 @@ import herdmanager.shared.generated.resources.error_http_server_error
 import herdmanager.shared.generated.resources.error_http_unknown
 import herdmanager.shared.generated.resources.error_network_connection
 import herdmanager.shared.generated.resources.error_network_timeout
+import herdmanager.shared.generated.resources.error_registry_parse
 import herdmanager.shared.generated.resources.error_server_model_not_found
 import herdmanager.shared.generated.resources.error_server_ollama_unavailable
 import herdmanager.shared.generated.resources.error_unexpected
@@ -44,6 +46,7 @@ fun AppError.toMessageResource(): StringResource = when (this) {
     is ModelNotFoundError -> Res.string.error_server_model_not_found
     is ParsingError -> Res.string.error_data_parsing
     is ValidationError -> Res.string.error_data_validation
+    is RegistryParseError -> Res.string.error_registry_parse
     is UnexpectedError -> Res.string.error_unexpected
 }
 

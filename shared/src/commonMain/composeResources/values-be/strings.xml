@@ -71,6 +71,7 @@
     <string name="save_settings">Захаваць налады</string>
     <string name="discard">Адхіліць</string>
     <string name="reset_defaults">Скінуць па змаўчанні</string>
+    <string name="reset_to_defaults">Скінуць да стандартных</string>
     <string name="settings_saved">Налады паспяхова захаваны</string>
     <string name="settings_save_failed">Не ўдалося захаваць налады</string>
 
@@ -106,5 +107,6 @@
     <string name="error_server_model_not_found">Мадэль не знойдзена на серверы.</string>
     <string name="error_data_parsing">Не ўдалося апрацаваць адказ сервера.</string>
     <string name="error_data_validation">Атрыманы некарэктныя дадзеныя.</string>
+    <string name="error_registry_parse">Не атрымалася прачытаць старонку рэестра мадэляў. Магчыма, яна змянілася — паспрабуйце зноў пазней.</string>
     <string name="error_unexpected">Нешта пайшло не так. Паспрабуйце зноў пазней.</string>
 </resources>

@@ -2,6 +2,8 @@ package by.ciszkin.herdmanager.data.repository
 
 import by.ciszkin.herdmanager.data.scraping.OllamaLibraryScraper
 import by.ciszkin.herdmanager.domain.error.AppException
+import by.ciszkin.herdmanager.domain.error.RegistryParseError
+import by.ciszkin.herdmanager.domain.error.RegistryParseException
 import by.ciszkin.herdmanager.domain.error.UnexpectedError
 import by.ciszkin.herdmanager.domain.model.RegistryModel
 import io.mockk.coEvery
@@ -76,6 +78,19 @@ class RegistryRepositoryImplTest {
         val error = result.exceptionOrNull()
         assertTrue(error is AppException)
         assertTrue(error.appError is UnexpectedError)
+    }
+
+    @Test
+    fun `getModels maps a registry parse failure into RegistryParseError`() = runTest {
+        coEvery { OllamaLibraryScraper.fetchModels(any(), any()) } returns
+            Result.failure(RegistryParseException("no model cards parsed"))
+
+        val result = repository.getModels("llama", 1)
+
+        assertTrue(result.isFailure)
+        val error = result.exceptionOrNull()
+        assertTrue(error is AppException)
+        assertTrue(error.appError is RegistryParseError)
     }
 
     @Test
