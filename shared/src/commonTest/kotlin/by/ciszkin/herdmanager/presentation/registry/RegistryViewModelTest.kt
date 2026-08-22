@@ -121,7 +121,6 @@ class RegistryViewModelTest {
     @Test
     fun `initial state is correct`() {
         val state = viewModel.state.value
-        assertTrue(state.allModels.isEmpty())
         assertTrue(state.models.isEmpty())
         assertEquals("", state.searchQuery)
         assertFalse(state.isLoading)
@@ -144,7 +143,6 @@ class RegistryViewModelTest {
         val state = viewModel.state.value
         assertFalse(state.isLoading)
         assertEquals(testModels.size, state.models.size)
-        assertEquals(testModels.size, state.allModels.size)
         assertEquals(testModels[0].id, state.models[0].id)
         assertEquals(testModels[0].name, state.models[0].name)
         assertTrue(state.canLoadMore)
@@ -181,11 +179,24 @@ class RegistryViewModelTest {
 
         val state = viewModel.state.value
         assertFalse(state.isLoading)
+        assertFalse(state.isSearching)
         assertEquals("llama", state.searchQuery)
         assertEquals(1, state.models.size)
         assertEquals("llama3", state.models[0].name)
-        assertTrue(state.allModels.isEmpty()) // Search clears allModels
         assertNull(state.error)
+    }
+
+    @Test
+    fun `SearchModels clears isSearching after the search completes`() = runTest {
+        viewModel.onIntent(RegistryIntent.SearchModels("llama"))
+
+        // With the unconfined dispatcher the search coroutine runs to
+        // completion eagerly, so the transient isSearching=true state is not
+        // observable; the contract is that it is false once the search lands.
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.isSearching)
+        assertEquals(1, viewModel.state.value.models.size)
     }
 
     @Test
@@ -460,11 +471,9 @@ class RegistryViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = failingViewModel.state.value
-        // PullModelUseCase filters out errors via mapNotNull, so we might not get an Error result
-        // The error is sent via effect instead
+        // PullModelUseCase now surfaces failures as PullResult.Error
         assertNotNull(state.pullResult)
-        // The result should be either Starting or nothing since errors are filtered
-        assertTrue(state.pullResult is PullResult.Starting)
+        assertTrue(state.pullResult is PullResult.Error)
     }
 
     @Test

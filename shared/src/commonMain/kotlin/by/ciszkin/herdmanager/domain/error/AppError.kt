@@ -127,6 +127,17 @@ data class ValidationError(
 }
 
 /**
+ * Failed to parse the Ollama registry page (markup mismatch, challenge page,
+ * or otherwise unparseable HTML). Usually indicates the site changed its
+ * markup — surfaced as an error instead of a silent empty list.
+ */
+data class RegistryParseError(
+    override val cause: Throwable?
+) : DataError {
+    override val technicalMessage = "Failed to parse the Ollama registry page"
+}
+
+/**
  * Unexpected/unknown error - usually indicates a bug.
  */
 data class UnexpectedError(

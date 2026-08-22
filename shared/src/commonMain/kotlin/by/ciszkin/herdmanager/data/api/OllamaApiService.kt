@@ -1,5 +1,6 @@
 package by.ciszkin.herdmanager.data.api
 
+import by.ciszkin.herdmanager.domain.error.OllamaApiException
 import by.ciszkin.herdmanager.domain.model.OllamaModel
 import by.ciszkin.herdmanager.domain.model.OllamaModelsResponse
 import by.ciszkin.herdmanager.domain.model.OllamaVersion
@@ -14,8 +15,10 @@ import io.ktor.client.request.get
 import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsChannel
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import io.ktor.utils.io.readAvailable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -33,17 +36,37 @@ class OllamaApiService(private val client: HttpClient) {
         isLenient = true
     }
 
-    suspend fun getModels(): List<OllamaModel> =
-        client.get("/api/tags").body<OllamaModelsResponse>().models
+    suspend fun getModels(): List<OllamaModel> {
+        val response = client.get("/api/tags")
+        if (!response.status.isSuccess()) {
+            throw OllamaApiException(response.status.value, "/api/tags")
+        }
+        return response.body<OllamaModelsResponse>().models
+    }
 
-    suspend fun getRunningModels(): List<RunningModel> =
-        client.get("/api/ps").body<RunningModelsResponse>().models
+    suspend fun getRunningModels(): List<RunningModel> {
+        val response = client.get("/api/ps")
+        if (!response.status.isSuccess()) {
+            throw OllamaApiException(response.status.value, "/api/ps")
+        }
+        return response.body<RunningModelsResponse>().models
+    }
 
-    suspend fun getVersion(): String =
-        client.get("/api/version").body<OllamaVersion>().version
+    suspend fun getVersion(): String {
+        val response = client.get("/api/version")
+        if (!response.status.isSuccess()) {
+            throw OllamaApiException(response.status.value, "/api/version")
+        }
+        return response.body<OllamaVersion>().version
+    }
 
-    suspend fun deleteModel(name: String) = client.delete("/api/delete") {
-        setBody(DeleteRequest(model = name))
+    suspend fun deleteModel(name: String) {
+        val response = client.delete("/api/delete") {
+            setBody(DeleteRequest(model = name))
+        }
+        if (!response.status.isSuccess()) {
+            throw OllamaApiException(response.status.value, "/api/delete")
+        }
     }
 
     fun pullModel(
@@ -64,6 +87,25 @@ class OllamaApiService(private val client: HttpClient) {
         }
 
         call.execute { response ->
+            if (!response.status.isSuccess()) {
+                val errorBody = response.bodyAsText()
+                val serverMessage = try {
+                    json.decodeFromString<PullProgress>(errorBody).error
+                } catch (_: Exception) {
+                    null
+                }
+                trySend(
+                    Result.failure(
+                        OllamaApiException(
+                            statusCode = response.status.value,
+                            endpoint = "/api/pull",
+                            serverMessage = serverMessage
+                        )
+                    )
+                )
+                return@execute
+            }
+
             val channel = response.bodyAsChannel()
             var buffer = ByteArray(4096)
             var position = 0

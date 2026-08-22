@@ -3,14 +3,18 @@ package by.ciszkin.herdmanager.data.connection
 import by.ciszkin.herdmanager.data.api.OllamaApiService
 import by.ciszkin.herdmanager.data.api.createOllamaHttpClient
 import by.ciszkin.herdmanager.domain.repository.SettingsRepository
+import io.ktor.client.HttpClient
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -36,32 +40,47 @@ import kotlinx.coroutines.launch
  * ```
  *
  * @param settingsRepository Repository for observing settings changes
+ * @param clientFactory Creates the HTTP client for an Ollama server URL.
+ * Defaults to [createOllamaHttpClient]; injectable for tests.
  */
 @OptIn(FlowPreview::class)
 class ConnectionManager(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val clientFactory: (serverUrl: String) -> HttpClient = ::createOllamaHttpClient
 ) {
-    private val managerScope = CoroutineScope(Dispatchers.IO)
+    @Volatile
+    private var managerScope: CoroutineScope? = null
+
+    @Volatile
     private var connectionMonitor: ConnectionMonitor? = null
+
+    @Volatile
     private var apiService: OllamaApiService? = null
+
+    @Volatile
     private var currentServerUrl: String? = null
+
+    @Volatile
     private var isStarted = false
 
+    @Volatile
+    private var currentClient: HttpClient? = null
+
+    @Volatile
+    private var initDeferred: CompletableDeferred<Unit>? = null
+
     companion object {
-        /**
-         * Debounce delay for settings changes to avoid rapid recreations
-         * during UI edits (in milliseconds).
-         */
         private const val SETTINGS_DEBOUNCE_MS = 500L
     }
 
     /**
-     * Gets the current API service.
+     * Gets the current API service, suspending until initialization completes.
      * @throws IllegalStateException if start() hasn't been called
      */
-    fun getApiService(): OllamaApiService {
+    suspend fun getApiService(): OllamaApiService {
+        initDeferred?.await()
         return apiService ?: throw IllegalStateException(
-            "ConnectionManager not started. Call start() first."
+            "ConnectionManager not initialized."
         )
     }
 
@@ -75,34 +94,35 @@ class ConnectionManager(
     /**
      * Gets the current ConnectionMonitor for state observation.
      * Returns null if start() hasn't been called yet.
-     *
-     * This allows UI components to safely access the monitor during
-     * the initial composition before LaunchedEffect starts the manager.
      */
     fun getConnectionMonitorOrNull(): ConnectionMonitor? = connectionMonitor
 
     /**
      * Starts the connection manager with initial settings.
-     *
-     * This function is non-suspend and returns immediately.
-     * Initial settings loading and service creation happens asynchronously
-     * in the background. UI components should handle the null case gracefully
-     * until services are ready.
-     *
-     * Must be called before getApiService() returns non-null value.
+     * Safe to call after stop() — recreates the coroutine scope and services.
      */
     fun start() {
         if (isStarted) return
         isStarted = true
 
-        // Launch async initialization
-        managerScope.launch {
-            // Get initial settings and create services
-            settingsRepository.settingsFlow
-                .first()
-                .let { initialSettings ->
-                    createServices(initialSettings.serverUrl)
+        val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+        managerScope = scope
+        val deferred = CompletableDeferred<Unit>()
+        initDeferred = deferred
+
+        // Async initialization from current settings
+        scope.launch {
+            try {
+                val initialSettings = settingsRepository.settingsFlow.first()
+                // Guard against stop()/start() while init is in flight: a cancelled
+                // scope must not create services over the fresh one.
+                if (scope.isActive) {
+                    createServices(scope, initialSettings.serverUrl)
                 }
+                deferred.complete(Unit)
+            } catch (e: Exception) {
+                deferred.completeExceptionally(e)
+            }
         }
 
         // Observe settings changes and recreate services when URL changes
@@ -113,32 +133,46 @@ class ConnectionManager(
                     recreateServices(settings.serverUrl)
                 }
             }
-            .launchIn(managerScope)
+            .launchIn(scope)
     }
 
     /**
      * Stops the connection manager and cleans up resources.
+     * start() can be called again after stop().
      */
     fun stop() {
         isStarted = false
         connectionMonitor?.stop()
         connectionMonitor = null
+        currentClient?.close()
+        currentClient = null
         apiService = null
         currentServerUrl = null
-        managerScope.cancel()
+        // Unblock waiters first so they see a predictable "not initialized"
+        // IllegalStateException; the scope.isActive guard in the init coroutine
+        // prevents stale service creation on the cancelled scope.
+        initDeferred?.complete(Unit)
+        initDeferred = null
+        managerScope?.cancel()
+        managerScope = null
     }
 
-    private fun createServices(serverUrl: String) {
+    private fun createServices(scope: CoroutineScope, serverUrl: String) {
         currentServerUrl = serverUrl
-        apiService = OllamaApiService(createOllamaHttpClient(serverUrl))
+        currentClient?.close()
+        val client = clientFactory(serverUrl)
+        currentClient = client
+        apiService = OllamaApiService(client)
         connectionMonitor = ConnectionMonitor(apiService!!)
-        connectionMonitor?.start(managerScope)
+        connectionMonitor?.start(scope)
     }
 
     private fun recreateServices(serverUrl: String) {
-        managerScope.launch {
-            connectionMonitor?.stop()
-            createServices(serverUrl)
+        val scope = managerScope ?: return
+        val monitor = connectionMonitor
+        scope.launch {
+            monitor?.stop()
+            createServices(scope, serverUrl)
         }
     }
 }

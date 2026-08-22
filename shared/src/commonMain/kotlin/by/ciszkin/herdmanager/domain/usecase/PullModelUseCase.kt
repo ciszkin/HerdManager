@@ -1,14 +1,16 @@
 package by.ciszkin.herdmanager.domain.usecase
 
-import by.ciszkin.herdmanager.domain.model.PullResult
-import by.ciszkin.herdmanager.domain.repository.OllamaRepository
 import by.ciszkin.herdmanager.domain.error.AppError
 import by.ciszkin.herdmanager.domain.error.ConnectionError
 import by.ciszkin.herdmanager.domain.error.ModelNotFoundError
+import by.ciszkin.herdmanager.domain.error.OllamaApiException
 import by.ciszkin.herdmanager.domain.error.OllamaUnavailableError
 import by.ciszkin.herdmanager.domain.error.UnexpectedError
+import by.ciszkin.herdmanager.domain.error.mapper.toAppError
+import by.ciszkin.herdmanager.domain.model.PullResult
+import by.ciszkin.herdmanager.domain.repository.OllamaRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.map
 
 /**
  * Maps Ollama server error messages to specific AppError types.
@@ -45,14 +47,31 @@ class PullModelUseCase(
     private val ollamaRepository: OllamaRepository
 ) {
     operator fun invoke(modelName: String): Flow<PullResult> =
-        ollamaRepository.pullModel(modelName).mapNotNull { result ->
-            result.getOrNull()?.let { progress ->
-                progress.error?.let { errorMsg ->
-                    PullResult.Error(mapPullError(errorMsg, modelName))
-                } ?: when (progress.status) {
-                    "pulling manifest" -> PullResult.Starting
-                    "success" -> PullResult.Completed
-                    else -> PullResult.Progress(progress)
+        ollamaRepository.pullModel(modelName).map { result ->
+            when {
+                result.isFailure -> {
+                    val exception = result.exceptionOrNull()
+                    val appError = when (exception) {
+                        is OllamaApiException ->
+                            exception.serverMessage?.let { mapPullError(it, modelName) }
+                                ?: exception.toAppError()
+                        else -> exception?.toAppError()
+                            ?: UnexpectedError(cause = exception, context = "pullModel")
+                    }
+                    PullResult.Error(appError)
+                }
+                else -> {
+                    val progress = result.getOrNull()
+                        ?: return@map PullResult.Error(
+                            UnexpectedError(cause = null, context = "pullModel: null progress")
+                        )
+                    progress.error?.let { errorMsg ->
+                        PullResult.Error(mapPullError(errorMsg, modelName))
+                    } ?: when (progress.status) {
+                        "pulling manifest" -> PullResult.Starting
+                        "success" -> PullResult.Completed
+                        else -> PullResult.Progress(progress)
+                    }
                 }
             }
         }

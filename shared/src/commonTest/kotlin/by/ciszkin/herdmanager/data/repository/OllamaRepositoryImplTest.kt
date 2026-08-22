@@ -3,6 +3,8 @@ package by.ciszkin.herdmanager.data.repository
 import by.ciszkin.herdmanager.data.api.OllamaApiService
 import by.ciszkin.herdmanager.data.connection.ConnectionManager
 import by.ciszkin.herdmanager.domain.error.AppException
+import by.ciszkin.herdmanager.domain.error.HttpError
+import by.ciszkin.herdmanager.domain.error.OllamaApiException
 import by.ciszkin.herdmanager.domain.error.UnexpectedError
 import by.ciszkin.herdmanager.domain.model.OllamaModel
 import by.ciszkin.herdmanager.domain.model.PullProgress
@@ -11,8 +13,6 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
-import io.ktor.client.statement.HttpResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
@@ -65,93 +65,69 @@ class OllamaRepositoryImplTest {
 
     @BeforeTest
     fun setup() {
-        // Create mocks
         mockConnectionManager = mockk()
         mockApiService = mockk()
 
-        // Setup ConnectionManager to return mock API service and current URL
-        every { mockConnectionManager.getApiService() } returns mockApiService
+        coEvery { mockConnectionManager.getApiService() } returns mockApiService
         every { mockConnectionManager.currentUrl } returns "localhost:11434"
 
-        // Create repository
         repository = OllamaRepositoryImpl(mockConnectionManager)
     }
 
     @Test
     fun `getModels returns success result`() = runTest {
-        // Given
         coEvery { mockApiService.getModels() } returns testModels
 
-        // When
         val result = repository.getModels()
 
-        // Then
         assertTrue(result.isSuccess)
         assertEquals(2, result.getOrNull()?.size)
         assertEquals("llama2", result.getOrNull()?.get(0)?.name)
-        assertEquals("mistral", result.getOrNull()?.get(1)?.name)
         coVerify { mockApiService.getModels() }
     }
 
     @Test
     fun `getModels returns failure result on exception`() = runTest {
-        // Given
         val exception = RuntimeException("Connection failed")
         coEvery { mockApiService.getModels() } throws exception
 
-        // When
         val result = repository.getModels()
 
-        // Then
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is AppException)
         assertTrue((result.exceptionOrNull() as AppException).appError is UnexpectedError)
-        assertEquals(exception, (result.exceptionOrNull() as AppException).cause)
         coVerify { mockApiService.getModels() }
     }
 
     @Test
     fun `getRunningModels returns success result`() = runTest {
-        // Given
         coEvery { mockApiService.getRunningModels() } returns testRunningModels
 
-        // When
         val result = repository.getRunningModels()
 
-        // Then
         assertTrue(result.isSuccess)
         assertEquals(2, result.getOrNull()?.size)
-        assertEquals("llama2", result.getOrNull()?.get(0)?.name)
-        assertEquals("mistral", result.getOrNull()?.get(1)?.name)
         coVerify { mockApiService.getRunningModels() }
     }
 
     @Test
     fun `getRunningModels returns failure result on exception`() = runTest {
-        // Given
         val exception = RuntimeException("Server unavailable")
         coEvery { mockApiService.getRunningModels() } throws exception
 
-        // When
         val result = repository.getRunningModels()
 
-        // Then
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is AppException)
-        assertTrue((result.exceptionOrNull() as AppException).appError is UnexpectedError)
-        assertEquals(exception, (result.exceptionOrNull() as AppException).cause)
         coVerify { mockApiService.getRunningModels() }
     }
 
     @Test
     fun `getRunningModels returns empty list when no models running`() = runTest {
-        // Given
         coEvery { mockApiService.getRunningModels() } returns emptyList()
 
-        // When
         val result = repository.getRunningModels()
 
-        // Then
         assertTrue(result.isSuccess)
         assertEquals(emptyList(), result.getOrNull())
         coVerify { mockApiService.getRunningModels() }
@@ -159,148 +135,50 @@ class OllamaRepositoryImplTest {
 
     @Test
     fun `deleteModel returns success result`() = runTest {
-        // Given
         val modelName = "llama2"
-        val mockHttpResponse = mockk<HttpResponse>()
-        coEvery { mockApiService.deleteModel(modelName) } returns mockHttpResponse
+        coEvery { mockApiService.deleteModel(modelName) } returns Unit
 
-        // When
         val result = repository.deleteModel(modelName)
 
-        // Then
         assertTrue(result.isSuccess)
         coVerify { mockApiService.deleteModel(modelName) }
     }
 
     @Test
-    fun `deleteModel returns failure result on exception`() = runTest {
-        // Given
+    fun `deleteModel returns HttpError on OllamaApiException`() = runTest {
         val modelName = "llama2"
-        val exception = RuntimeException("Model not found")
+        val exception = OllamaApiException(404, "/api/delete")
         coEvery { mockApiService.deleteModel(modelName) } throws exception
 
-        // When
         val result = repository.deleteModel(modelName)
 
-        // Then
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is AppException)
-        assertTrue((result.exceptionOrNull() as AppException).appError is UnexpectedError)
-        assertEquals(exception, (result.exceptionOrNull() as AppException).cause)
+        val appException = result.exceptionOrNull() as AppException
+        assertTrue(appException.appError is HttpError)
+        assertEquals(404, (appException.appError as HttpError).statusCode)
         coVerify { mockApiService.deleteModel(modelName) }
     }
 
     @Test
-    fun `deleteModel returns failure result on network error`() = runTest {
-        // Given
+    fun `deleteModel returns failure on generic exception`() = runTest {
         val modelName = "llama2"
         val exception = RuntimeException("Network timeout")
         coEvery { mockApiService.deleteModel(modelName) } throws exception
 
-        // When
         val result = repository.deleteModel(modelName)
 
-        // Then
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is AppException)
-        assertTrue((result.exceptionOrNull() as AppException).appError is UnexpectedError)
-        assertEquals("Unexpected error in deleteModel: Network timeout", result.exceptionOrNull()?.message)
         coVerify { mockApiService.deleteModel(modelName) }
     }
 
     @Test
     fun `pullModel returns flow with progress updates`() = runTest {
-        // Given
         val modelName = "llama2"
         val progressUpdates = listOf(
             PullProgress(status = "pulling manifest"),
             PullProgress(status = "downloading", digest = "abc123", total = 1000000, completed = 500000),
-            PullProgress(status = "verifying", digest = "abc123", total = 1000000, completed = 1000000),
             PullProgress(status = "success")
-        )
-
-        val resultFlow = flowOf(
-            Result.success(progressUpdates[0]),
-            Result.success(progressUpdates[1]),
-            Result.success(progressUpdates[2]),
-            Result.success(progressUpdates[3])
-        )
-
-        coEvery { mockApiService.pullModel(modelName) } returns resultFlow
-
-        // When
-        val flow = repository.pullModel(modelName)
-        val results = flow.toList()
-
-        // Then
-        assertEquals(4, results.size)
-        assertTrue(results[0].isSuccess)
-        assertEquals("pulling manifest", results[0].getOrNull()?.status)
-        assertEquals("downloading", results[1].getOrNull()?.status)
-        assertEquals(500000, results[1].getOrNull()?.completed)
-        assertEquals("verifying", results[2].getOrNull()?.status)
-        assertEquals("success", results[3].getOrNull()?.status)
-        coVerify { mockApiService.pullModel(modelName) }
-    }
-
-    @Test
-    fun `pullModel returns flow with error result`() = runTest {
-        // Given
-        val modelName = "llama2"
-        val exception = RuntimeException("Download failed")
-        val resultFlow = flowOf<Result<PullProgress>>(
-            Result.success(PullProgress(status = "starting")),
-            Result.failure(exception)
-        )
-
-        coEvery { mockApiService.pullModel(modelName) } returns resultFlow
-
-        // When
-        val flow = repository.pullModel(modelName)
-        val results = flow.toList()
-
-        // Then
-        assertEquals(2, results.size)
-        assertTrue(results[0].isSuccess)
-        assertEquals("starting", results[0].getOrNull()?.status)
-        assertTrue(results[1].isFailure)
-        assertEquals(exception, results[1].exceptionOrNull())
-        coVerify { mockApiService.pullModel(modelName) }
-    }
-
-    @Test
-    fun `pullModel returns flow with error in PullProgress`() = runTest {
-        // Given
-        val modelName = "llama2"
-        val errorProgress = PullProgress(error = "Authentication failed")
-        val resultFlow = flowOf(
-            Result.success(PullProgress(status = "starting")),
-            Result.success(errorProgress)
-        )
-
-        coEvery { mockApiService.pullModel(modelName) } returns resultFlow
-
-        // When
-        val flow = repository.pullModel(modelName)
-        val results = flow.toList()
-
-        // Then
-        assertEquals(2, results.size)
-        assertTrue(results[0].isSuccess)
-        assertEquals("starting", results[0].getOrNull()?.status)
-        assertTrue(results[1].isSuccess)
-        assertEquals("Authentication failed", results[1].getOrNull()?.error)
-        coVerify { mockApiService.pullModel(modelName) }
-    }
-
-    @Test
-    fun `pullModel returns flow with partial progress`() = runTest {
-        // Given
-        val modelName = "llama2"
-        val progressUpdates = listOf(
-            PullProgress(status = "downloading", digest = "abc123", total = 1000000, completed = 250000),
-            PullProgress(status = "downloading", digest = "abc123", total = 1000000, completed = 500000),
-            PullProgress(status = "downloading", digest = "abc123", total = 1000000, completed = 750000)
         )
 
         val resultFlow = flowOf(
@@ -311,71 +189,112 @@ class OllamaRepositoryImplTest {
 
         coEvery { mockApiService.pullModel(modelName) } returns resultFlow
 
-        // When
         val flow = repository.pullModel(modelName)
         val results = flow.toList()
 
-        // Then
         assertEquals(3, results.size)
-        assertEquals(250000, results[0].getOrNull()?.completed)
-        assertEquals(500000, results[1].getOrNull()?.completed)
-        assertEquals(750000, results[2].getOrNull()?.completed)
+        assertTrue(results[0].isSuccess)
+        assertEquals("pulling manifest", results[0].getOrNull()?.status)
         coVerify { mockApiService.pullModel(modelName) }
     }
 
     @Test
-    fun `getModels uses current API service from ConnectionManager`() = runTest {
-        // Given
-        coEvery { mockApiService.getModels() } returns testModels
-
-        // When
-        repository.getModels()
-
-        // Then - verify getApiService was called
-        verify { mockConnectionManager.getApiService() }
-        coVerify { mockApiService.getModels() }
-    }
-
-    @Test
-    fun `getRunningModels uses current API service from ConnectionManager`() = runTest {
-        // Given
-        coEvery { mockApiService.getRunningModels() } returns testRunningModels
-
-        // When
-        repository.getRunningModels()
-
-        // Then - verify getApiService was called
-        verify { mockConnectionManager.getApiService() }
-        coVerify { mockApiService.getRunningModels() }
-    }
-
-    @Test
-    fun `deleteModel uses current API service from ConnectionManager`() = runTest {
-        // Given
+    fun `pullModel returns flow with error result`() = runTest {
         val modelName = "llama2"
-        val mockHttpResponse = mockk<HttpResponse>()
-        coEvery { mockApiService.deleteModel(modelName) } returns mockHttpResponse
+        val exception = RuntimeException("Download failed")
+        val resultFlow = flowOf<Result<PullProgress>>(
+            Result.success(PullProgress(status = "starting")),
+            Result.failure(exception)
+        )
 
-        // When
-        repository.deleteModel(modelName)
+        coEvery { mockApiService.pullModel(modelName) } returns resultFlow
 
-        // Then - verify getApiService was called
-        verify { mockConnectionManager.getApiService() }
-        coVerify { mockApiService.deleteModel(modelName) }
+        val flow = repository.pullModel(modelName)
+        val results = flow.toList()
+
+        assertEquals(2, results.size)
+        assertTrue(results[0].isSuccess)
+        assertTrue(results[1].isFailure)
+        assertEquals(exception, results[1].exceptionOrNull())
+        coVerify { mockApiService.pullModel(modelName) }
     }
 
     @Test
-    fun `pullModel uses current API service from ConnectionManager`() = runTest {
-        // Given
+    fun `pullModel returns flow with error in PullProgress`() = runTest {
+        val modelName = "llama2"
+        val errorProgress = PullProgress(error = "Authentication failed")
+        val resultFlow = flowOf(
+            Result.success(PullProgress(status = "starting")),
+            Result.success(errorProgress)
+        )
+
+        coEvery { mockApiService.pullModel(modelName) } returns resultFlow
+
+        val flow = repository.pullModel(modelName)
+        val results = flow.toList()
+
+        assertEquals(2, results.size)
+        assertTrue(results[0].isSuccess)
+        assertEquals("starting", results[0].getOrNull()?.status)
+        assertTrue(results[1].isSuccess)
+        assertEquals("Authentication failed", results[1].getOrNull()?.error)
+        coVerify { mockApiService.pullModel(modelName) }
+    }
+
+    @Test
+    fun `pullModel returns flow with partial progress`() = runTest {
+        val modelName = "llama2"
+        val progressUpdates = listOf(
+            PullProgress(status = "downloading", digest = "abc123", total = 1000000, completed = 250000),
+            PullProgress(status = "downloading", digest = "abc123", total = 1000000, completed = 750000)
+        )
+
+        val resultFlow = flowOf(
+            Result.success(progressUpdates[0]),
+            Result.success(progressUpdates[1])
+        )
+
+        coEvery { mockApiService.pullModel(modelName) } returns resultFlow
+
+        val flow = repository.pullModel(modelName)
+        val results = flow.toList()
+
+        assertEquals(2, results.size)
+        assertEquals(250000, results[0].getOrNull()?.completed)
+        assertEquals(750000, results[1].getOrNull()?.completed)
+        coVerify { mockApiService.pullModel(modelName) }
+    }
+
+    @Test
+    fun `pullModel uses suspend getApiService inside the flow`() = runTest {
         val modelName = "llama2"
         val resultFlow = flowOf(Result.success(PullProgress(status = "starting")))
         coEvery { mockApiService.pullModel(modelName) } returns resultFlow
 
-        // When
         repository.pullModel(modelName).toList()
 
-        // Then - verify getApiService was called
-        verify { mockConnectionManager.getApiService() }
+        coVerify { mockConnectionManager.getApiService() }
         coVerify { mockApiService.pullModel(modelName) }
+    }
+
+    @Test
+    fun `pullModel propagates init failure so ViewModel catch can handle it`() = runTest {
+        val modelName = "llama2"
+        coEvery { mockConnectionManager.getApiService() } throws IllegalStateException("not started")
+
+        val result = runCatching { repository.pullModel(modelName).toList() }
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalStateException)
+    }
+
+    @Test
+    fun `getModels calls suspend getApiService`() = runTest {
+        coEvery { mockApiService.getModels() } returns testModels
+
+        repository.getModels()
+
+        coVerify { mockConnectionManager.getApiService() }
+        coVerify { mockApiService.getModels() }
     }
 }

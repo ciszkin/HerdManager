@@ -1,5 +1,8 @@
 package by.ciszkin.herdmanager.domain.usecase
 
+import by.ciszkin.herdmanager.domain.error.HttpError
+import by.ciszkin.herdmanager.domain.error.ModelNotFoundError
+import by.ciszkin.herdmanager.domain.error.OllamaApiException
 import by.ciszkin.herdmanager.domain.error.UnexpectedError
 import by.ciszkin.herdmanager.domain.model.PullProgress
 import by.ciszkin.herdmanager.domain.model.PullResult
@@ -147,7 +150,7 @@ class PullModelUseCaseTest {
     }
 
     @Test
-    fun `invoke filters out failed Results`() = runTest {
+    fun `invoke surfaces failed Results as PullResult_Error`() = runTest {
         // Given
         val modelName = "gemma"
         val exception = RuntimeException("Network timeout")
@@ -162,15 +165,54 @@ class PullModelUseCaseTest {
         // When
         val results = pullModelUseCase(modelName).toList()
 
-        // Then
-        assertEquals(2, results.size)
+        // Then - failures are now surfaced, not silently dropped
+        assertEquals(3, results.size)
         assertTrue(results[0] is PullResult.Starting)
-        assertTrue(results[1] is PullResult.Completed)
+        assertTrue(results[1] is PullResult.Error)
+        assertTrue(results[2] is PullResult.Completed)
         verify { mockRepository.pullModel(modelName) }
     }
 
     @Test
-    fun `invoke filters out null results from mapNotNull`() = runTest {
+    fun `invoke maps OllamaApiException with model not found to ModelNotFoundError`() = runTest {
+        // Given
+        val modelName = "nonexistent"
+        val exception = OllamaApiException(404, "/api/pull", serverMessage = "model 'nonexistent' not found")
+        val resultFlow = flowOf<Result<PullProgress>>(Result.failure(exception))
+
+        coEvery { mockRepository.pullModel(modelName) } returns resultFlow
+
+        // When
+        val results = pullModelUseCase(modelName).toList()
+
+        // Then
+        assertEquals(1, results.size)
+        assertTrue(results[0] is PullResult.Error)
+        assertTrue((results[0] as PullResult.Error).error is ModelNotFoundError)
+        verify { mockRepository.pullModel(modelName) }
+    }
+
+    @Test
+    fun `invoke maps OllamaApiException without server message to HttpError`() = runTest {
+        // Given
+        val modelName = "gemma"
+        val exception = OllamaApiException(500, "/api/pull")
+        val resultFlow = flowOf<Result<PullProgress>>(Result.failure(exception))
+
+        coEvery { mockRepository.pullModel(modelName) } returns resultFlow
+
+        // When
+        val results = pullModelUseCase(modelName).toList()
+
+        // Then
+        assertEquals(1, results.size)
+        assertTrue(results[0] is PullResult.Error)
+        assertTrue((results[0] as PullResult.Error).error is HttpError)
+        verify { mockRepository.pullModel(modelName) }
+    }
+
+    @Test
+    fun `invoke surfaces multiple failed Results as PullResult_Error`() = runTest {
         // Given
         val modelName = "llama3"
         val resultFlow = flowOf(
@@ -186,11 +228,13 @@ class PullModelUseCaseTest {
         // When
         val results = pullModelUseCase(modelName).toList()
 
-        // Then
-        assertEquals(3, results.size)
+        // Then - all failures are surfaced
+        assertEquals(5, results.size)
         assertTrue(results[0] is PullResult.Starting)
-        assertTrue(results[1] is PullResult.Progress)
-        assertTrue(results[2] is PullResult.Completed)
+        assertTrue(results[1] is PullResult.Error)
+        assertTrue(results[2] is PullResult.Progress)
+        assertTrue(results[3] is PullResult.Error)
+        assertTrue(results[4] is PullResult.Completed)
         verify { mockRepository.pullModel(modelName) }
     }
 

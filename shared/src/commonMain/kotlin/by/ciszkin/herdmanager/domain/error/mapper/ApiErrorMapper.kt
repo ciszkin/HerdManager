@@ -3,7 +3,11 @@ package by.ciszkin.herdmanager.domain.error.mapper
 import by.ciszkin.herdmanager.domain.error.AppError
 import by.ciszkin.herdmanager.domain.error.AppException
 import by.ciszkin.herdmanager.domain.error.ConnectionError
+import by.ciszkin.herdmanager.domain.error.HttpError
+import by.ciszkin.herdmanager.domain.error.OllamaApiException
 import by.ciszkin.herdmanager.domain.error.ParsingError
+import by.ciszkin.herdmanager.domain.error.RegistryParseError
+import by.ciszkin.herdmanager.domain.error.RegistryParseException
 import by.ciszkin.herdmanager.domain.error.TimeoutError
 import by.ciszkin.herdmanager.domain.error.UnexpectedError
 import io.ktor.client.call.NoTransformationFoundException
@@ -28,6 +32,16 @@ object ApiErrorMapper {
 
             // AppException wrapper - extract the actual AppError
             is AppException -> exception.appError
+
+            // HTTP status code errors from Ollama API
+            is OllamaApiException -> HttpError(
+                cause = exception,
+                statusCode = exception.statusCode,
+                endpoint = exception.endpoint
+            )
+
+            // Registry page could not be parsed (markup mismatch / challenge)
+            is RegistryParseException -> RegistryParseError(cause = exception)
 
             // Timeout errors
             is HttpRequestTimeoutException -> TimeoutError(

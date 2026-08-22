@@ -1,12 +1,9 @@
 package by.ciszkin.herdmanager.data.api
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.plugins.logging.Logger
-import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
@@ -20,9 +17,9 @@ fun createOllamaHttpClient(baseUrl: String): HttpClient {
                 isLenient = true
             })
         }
-        install(Logging) {
-            level = LogLevel.BODY
-            logger = Logger.SIMPLE
+        install(HttpTimeout) {
+            requestTimeoutMillis = 15_000
+            connectTimeoutMillis = 5_000
         }
         defaultRequest {
             url(baseUrl)
