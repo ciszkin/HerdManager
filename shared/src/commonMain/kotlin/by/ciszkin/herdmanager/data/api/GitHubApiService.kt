@@ -14,9 +14,6 @@ class GitHubApiService(private val client: HttpClient) {
                 append("Accept", "application/vnd.github+json")
             }
         }
-        println("GitHub API response status: ${response.status}")
-        val body = response.body<GitHubRelease>()
-        println("GitHub API response body: $body")
-        return body
+        return response.body<GitHubRelease>()
     }
 }

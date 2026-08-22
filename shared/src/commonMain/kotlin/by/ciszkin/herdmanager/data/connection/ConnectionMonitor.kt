@@ -3,7 +3,6 @@ package by.ciszkin.herdmanager.data.connection
 import by.ciszkin.herdmanager.data.api.OllamaApiService
 import by.ciszkin.herdmanager.domain.model.ConnectionState
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,16 +34,19 @@ class ConnectionMonitor(
      */
     val state: StateFlow<ConnectionState> = _state.asStateFlow()
 
+    @Volatile
     private var pollingJob: Job? = null
 
     /**
      * Starts monitoring connection with periodic polling.
      *
-     * The first check happens after [CHECK_INTERVAL_MS] delay.
-     * Use with a CoroutineScope that matches the desired lifecycle.
+     * The first check happens immediately, then every [CHECK_INTERVAL_MS].
+     * Runs on the given scope's dispatcher; the caller controls lifecycle
+     * (e.g. a scope backed by Dispatchers.IO in production, a test scope
+     * with virtual time in tests).
      */
     fun start(scope: CoroutineScope) {
-        pollingJob = scope.launch(Dispatchers.IO) {
+        pollingJob = scope.launch {
             while (isActive) {
                 check()
                 delay(CHECK_INTERVAL_MS)
