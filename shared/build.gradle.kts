@@ -38,7 +38,6 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
-            implementation(libs.ktor.client.logging)
             implementation(libs.kotlinx.datetime)
             implementation(libs.feather.icons)
             implementation(libs.jsoup)
@@ -62,6 +61,10 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.ktor.client.cio)
+        }
+
+        jvmTest.dependencies {
+            implementation(libs.ktor.client.mock)
         }
     }
 }

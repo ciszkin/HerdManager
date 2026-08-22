@@ -8,10 +8,8 @@ import by.ciszkin.herdmanager.presentation.architecture.BaseMviViewModel
 import by.ciszkin.herdmanager.domain.error.mapper.toAppError
 import cafe.adriel.voyager.core.model.screenModelScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.milliseconds
 
 class RegistryViewModel(
     private val getRegistryModelsUseCase: GetRegistryModelsUseCase,
@@ -19,6 +17,11 @@ class RegistryViewModel(
 ) : BaseMviViewModel<RegistryIntent, RegistryState, RegistryEffect>() {
 
     private var pullJob: Job? = null
+
+    companion object {
+        /** Ollama tag constraint: one or more [a-zA-Z0-9._-] characters. */
+        private val VALID_TAG = Regex("""[a-zA-Z0-9._-]+""")
+    }
 
     override fun initialState() = RegistryState()
 
@@ -39,10 +42,9 @@ class RegistryViewModel(
     private fun loadModels() {
         screenModelScope.launch {
             reduceState { copy(isLoading = true, error = null, currentPage = 1, canLoadMore = true) }
-            delay(100.milliseconds)
             getRegistryModelsUseCase(page = 1)
                 .onSuccess { models ->
-                    reduceState { copy(models = models, allModels = models, isLoading = false, canLoadMore = models.isNotEmpty()) }
+                    reduceState { copy(models = models, isLoading = false, canLoadMore = models.isNotEmpty()) }
                     sendEffect(RegistryEffect.ScrollToTop)
                 }
                 .onFailure { error ->
@@ -54,10 +56,9 @@ class RegistryViewModel(
     private fun refreshModels() {
         screenModelScope.launch {
             reduceState { copy(isLoading = true, error = null, currentPage = 1, canLoadMore = true) }
-            delay(100.milliseconds)
             getRegistryModelsUseCase(page = 1)
                 .onSuccess { models ->
-                    reduceState { copy(models = models, allModels = models, isLoading = false, canLoadMore = models.isNotEmpty()) }
+                    reduceState { copy(models = models, isLoading = false, canLoadMore = models.isNotEmpty()) }
                 }
                 .onFailure { error ->
                     reduceState { copy(error = error.toAppError(), isLoading = false) }
@@ -67,14 +68,13 @@ class RegistryViewModel(
 
     private fun filterModels(query: String = "") {
         screenModelScope.launch {
-            reduceState { copy(isLoading = true, searchQuery = query, currentPage = 1, canLoadMore = true, allModels = emptyList()) }
-            delay(100.milliseconds)
+            reduceState { copy(isLoading = true, isSearching = true, searchQuery = query, currentPage = 1, canLoadMore = true) }
             getRegistryModelsUseCase(query, page = 1)
                 .onSuccess { models ->
-                    reduceState { copy(models = models, allModels = emptyList(), isLoading = false, canLoadMore = models.isNotEmpty()) }
+                    reduceState { copy(models = models, isLoading = false, isSearching = false, canLoadMore = models.isNotEmpty()) }
                 }
                 .onFailure { error ->
-                    reduceState { copy(error = error.toAppError(), isLoading = false) }
+                    reduceState { copy(error = error.toAppError(), isLoading = false, isSearching = false) }
                 }
         }
     }
@@ -86,15 +86,14 @@ class RegistryViewModel(
         screenModelScope.launch {
             val nextPage = currentState.currentPage + 1
             reduceState { copy(isLoadingMore = true) }
-            delay(100.milliseconds)
             getRegistryModelsUseCase(currentState.searchQuery, nextPage)
                 .onSuccess { newModels ->
                     val existingIds = currentState.models.map { it.id }.toSet()
                     val uniqueNewModels = newModels.filter { it.id !in existingIds }
-                    val allModels = currentState.models + uniqueNewModels
+                    val mergedModels = currentState.models + uniqueNewModels
                     reduceState {
                         copy(
-                            models = allModels,
+                            models = mergedModels,
                             isLoadingMore = false,
                             currentPage = nextPage,
                             canLoadMore = newModels.isNotEmpty()
@@ -109,10 +108,13 @@ class RegistryViewModel(
 
     private fun showPullDialog(model: RegistryModel) {
         screenModelScope.launch {
-            val tags = if ("latest" in model.tags) {
-                model.tags
+            // The scraper's size tags are usually valid pull tags, but guard
+            // against anything outside Ollama's tag charset ("model:tag").
+            val safeTags = model.tags.filter { VALID_TAG.matches(it) }
+            val tags = if ("latest" in safeTags) {
+                safeTags
             } else {
-                model.tags + "latest"
+                safeTags + "latest"
             }
             reduceState {
                 copy(
