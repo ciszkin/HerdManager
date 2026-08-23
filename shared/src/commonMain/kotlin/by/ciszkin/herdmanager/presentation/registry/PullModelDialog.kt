@@ -239,6 +239,16 @@ fun PullModelDialog(
                     }
                 }
             }
+        },
+        dismissButton = {
+            // Explicit cancel in the ready-to-pull state; during/after a pull
+            // the confirm button already covers dismissal, and the dialog
+            // blocks dismissal by outside tap while pulling.
+            if (pullResult == null) {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(Res.string.cancel))
+                }
+            }
         }
     )
 }
