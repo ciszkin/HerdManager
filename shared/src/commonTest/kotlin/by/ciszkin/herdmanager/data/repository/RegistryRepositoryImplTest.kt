@@ -6,6 +6,7 @@ import by.ciszkin.herdmanager.domain.error.RegistryParseError
 import by.ciszkin.herdmanager.domain.error.RegistryParseException
 import by.ciszkin.herdmanager.domain.error.UnexpectedError
 import by.ciszkin.herdmanager.domain.model.RegistryModel
+import by.ciszkin.herdmanager.domain.model.RegistrySort
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockkObject
@@ -59,7 +60,7 @@ class RegistryRepositoryImplTest {
 
     @Test
     fun `getModels returns success with the models from the scraper`() = runTest {
-        coEvery { OllamaLibraryScraper.fetchModels(any(), any()) } returns Result.success(testModels)
+        coEvery { OllamaLibraryScraper.fetchModels(any(), any(), any(), any()) } returns Result.success(testModels)
 
         val result = repository.getModels("llama", 1)
 
@@ -69,7 +70,7 @@ class RegistryRepositoryImplTest {
 
     @Test
     fun `getModels maps a scraper failure into an AppException`() = runTest {
-        coEvery { OllamaLibraryScraper.fetchModels(any(), any()) } returns
+        coEvery { OllamaLibraryScraper.fetchModels(any(), any(), any(), any()) } returns
             Result.failure(RuntimeException("Network error"))
 
         val result = repository.getModels("llama", 1)
@@ -82,7 +83,7 @@ class RegistryRepositoryImplTest {
 
     @Test
     fun `getModels maps a registry parse failure into RegistryParseError`() = runTest {
-        coEvery { OllamaLibraryScraper.fetchModels(any(), any()) } returns
+        coEvery { OllamaLibraryScraper.fetchModels(any(), any(), any(), any()) } returns
             Result.failure(RegistryParseException("no model cards parsed"))
 
         val result = repository.getModels("llama", 1)
@@ -95,20 +96,29 @@ class RegistryRepositoryImplTest {
 
     @Test
     fun `getModels forwards query and page to the scraper`() = runTest {
-        coEvery { OllamaLibraryScraper.fetchModels(any(), any()) } returns Result.success(emptyList())
+        coEvery { OllamaLibraryScraper.fetchModels(any(), any(), any(), any()) } returns Result.success(emptyList())
 
         repository.getModels("mistral", 3)
 
-        coVerify { OllamaLibraryScraper.fetchModels("mistral", 3) }
+        coVerify { OllamaLibraryScraper.fetchModels("mistral", 3, RegistrySort.POPULAR, null) }
     }
 
     @Test
     fun `getModels with empty query still delegates to the scraper`() = runTest {
-        coEvery { OllamaLibraryScraper.fetchModels(any(), any()) } returns Result.success(testModels)
+        coEvery { OllamaLibraryScraper.fetchModels(any(), any(), any(), any()) } returns Result.success(testModels)
 
         val result = repository.getModels("", 1)
 
         assertTrue(result.isSuccess)
-        coVerify { OllamaLibraryScraper.fetchModels("", 1) }
+        coVerify { OllamaLibraryScraper.fetchModels("", 1, RegistrySort.POPULAR, null) }
+    }
+
+    @Test
+    fun `getModels forwards sort and category to the scraper`() = runTest {
+        coEvery { OllamaLibraryScraper.fetchModels(any(), any(), any(), any()) } returns Result.success(emptyList())
+
+        repository.getModels("", 1, RegistrySort.NEWEST, "vision")
+
+        coVerify { OllamaLibraryScraper.fetchModels("", 1, RegistrySort.NEWEST, "vision") }
     }
 }

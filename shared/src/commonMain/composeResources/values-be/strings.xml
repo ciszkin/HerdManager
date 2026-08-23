@@ -52,6 +52,10 @@
     <string name="pull_count">Сцягванняў: %1$s</string>
     <string name="tags_more">+%1$d яшчэ</string>
 
+    <string name="registry_all">Усе</string>
+    <string name="registry_sort_popular">Папулярныя</string>
+    <string name="registry_sort_newest">Новыя</string>
+
     <string name="running_models">Запушчаныя мадэлі</string>
     <string name="empty_running">Няма запушчаных мадэляў</string>
     <string name="empty_running_description">Загружаныя мадэлі з'явяцца тут</string>

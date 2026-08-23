@@ -3,9 +3,16 @@ package by.ciszkin.herdmanager.presentation.registry
 import by.ciszkin.herdmanager.domain.error.AppError
 import by.ciszkin.herdmanager.domain.model.PullResult
 import by.ciszkin.herdmanager.domain.model.RegistryModel
+import by.ciszkin.herdmanager.domain.model.RegistrySort
 import by.ciszkin.herdmanager.presentation.architecture.MviEffect
 import by.ciszkin.herdmanager.presentation.architecture.MviIntent
 import by.ciszkin.herdmanager.presentation.architecture.MviState
+
+/**
+ * Quick-filter capabilities offered on the registry screen, matching the
+ * capability `c=` values verified to be honored by ollama.com/search.
+ */
+val REGISTRY_FILTER_CATEGORIES = listOf("vision", "embedding", "tools", "thinking")
 
 sealed interface RegistryIntent : MviIntent {
     data object LoadModels : RegistryIntent
@@ -13,6 +20,8 @@ sealed interface RegistryIntent : MviIntent {
     data object ClearSearch : RegistryIntent
     data object Retry : RegistryIntent
     data object LoadMore : RegistryIntent
+    data class SelectSort(val sort: RegistrySort) : RegistryIntent
+    data class SelectCategory(val category: String?) : RegistryIntent
     data class ShowPullDialog(val model: RegistryModel) : RegistryIntent
     data class SelectTag(val tag: String) : RegistryIntent
     data class PullModel(val modelName: String, val tag: String) : RegistryIntent
@@ -22,6 +31,8 @@ sealed interface RegistryIntent : MviIntent {
 data class RegistryState(
     val models: List<RegistryModel> = emptyList(),
     val searchQuery: String = "",
+    val sort: RegistrySort = RegistrySort.POPULAR,
+    val selectedCategory: String? = null,
     val isLoading: Boolean = false,
     val isSearching: Boolean = false,
     val isLoadingMore: Boolean = false,

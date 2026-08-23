@@ -52,6 +52,10 @@
     <string name="pull_count">Pulls: %1$s</string>
     <string name="tags_more">+%1$d more</string>
 
+    <string name="registry_all">All</string>
+    <string name="registry_sort_popular">Popular</string>
+    <string name="registry_sort_newest">Newest</string>
+
     <string name="running_models">Running Models</string>
     <string name="empty_running">No models running</string>
     <string name="empty_running_description">Loaded models will appear here</string>

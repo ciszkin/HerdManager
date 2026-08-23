@@ -2,6 +2,7 @@ package by.ciszkin.herdmanager.presentation.registry
 
 import by.ciszkin.herdmanager.domain.model.PullResult
 import by.ciszkin.herdmanager.domain.model.RegistryModel
+import by.ciszkin.herdmanager.domain.model.RegistrySort
 import by.ciszkin.herdmanager.domain.usecase.GetRegistryModelsUseCase
 import by.ciszkin.herdmanager.domain.usecase.PullModelUseCase
 import by.ciszkin.herdmanager.presentation.architecture.BaseMviViewModel
@@ -30,8 +31,10 @@ class RegistryViewModel(
             RegistryIntent.LoadModels -> loadModels()
             is RegistryIntent.SearchModels -> filterModels(intent.query)
             RegistryIntent.ClearSearch -> filterModels()
-            RegistryIntent.Retry -> refreshModels()
+            RegistryIntent.Retry -> loadModels()
             RegistryIntent.LoadMore -> loadMore()
+            is RegistryIntent.SelectSort -> applySort(intent.sort)
+            is RegistryIntent.SelectCategory -> applyCategory(intent.category)
             is RegistryIntent.ShowPullDialog -> showPullDialog(intent.model)
             is RegistryIntent.SelectTag -> selectTag(intent.tag)
             is RegistryIntent.PullModel -> startPull(intent.modelName, intent.tag)
@@ -42,40 +45,72 @@ class RegistryViewModel(
     private fun loadModels() {
         screenModelScope.launch {
             reduceState { copy(isLoading = true, error = null, currentPage = 1, canLoadMore = true) }
-            getRegistryModelsUseCase(page = 1)
-                .onSuccess { models ->
-                    reduceState { copy(models = models, isLoading = false, canLoadMore = models.isNotEmpty()) }
-                    sendEffect(RegistryEffect.ScrollToTop)
-                }
-                .onFailure { error ->
-                    reduceState { copy(error = error.toAppError(), isLoading = false) }
-                }
+            fetchFirstPage()
         }
     }
 
-    private fun refreshModels() {
-        screenModelScope.launch {
-            reduceState { copy(isLoading = true, error = null, currentPage = 1, canLoadMore = true) }
-            getRegistryModelsUseCase(page = 1)
-                .onSuccess { models ->
-                    reduceState { copy(models = models, isLoading = false, canLoadMore = models.isNotEmpty()) }
+    /**
+     * Loads page 1 applying the current search query, sort order and category
+     * filter. Reads them from the state, so callers only need to reduce the
+     * option they are changing before invoking it.
+     */
+    private suspend fun fetchFirstPage() {
+        val current = state.value
+        getRegistryModelsUseCase(
+            query = current.searchQuery,
+            page = 1,
+            sort = current.sort,
+            category = current.selectedCategory
+        )
+            .onSuccess { models ->
+                reduceState {
+                    copy(models = models, isLoading = false, isSearching = false, canLoadMore = models.isNotEmpty())
                 }
-                .onFailure { error ->
-                    reduceState { copy(error = error.toAppError(), isLoading = false) }
-                }
-        }
+                sendEffect(RegistryEffect.ScrollToTop)
+            }
+            .onFailure { error ->
+                reduceState { copy(error = error.toAppError(), isLoading = false, isSearching = false) }
+            }
     }
 
     private fun filterModels(query: String = "") {
         screenModelScope.launch {
-            reduceState { copy(isLoading = true, isSearching = true, searchQuery = query, currentPage = 1, canLoadMore = true) }
-            getRegistryModelsUseCase(query, page = 1)
-                .onSuccess { models ->
-                    reduceState { copy(models = models, isLoading = false, isSearching = false, canLoadMore = models.isNotEmpty()) }
-                }
-                .onFailure { error ->
-                    reduceState { copy(error = error.toAppError(), isLoading = false, isSearching = false) }
-                }
+            reduceState {
+                copy(
+                    isLoading = true,
+                    isSearching = true,
+                    searchQuery = query,
+                    currentPage = 1,
+                    canLoadMore = true
+                )
+            }
+            fetchFirstPage()
+        }
+    }
+
+    private fun applySort(sort: RegistrySort) {
+        if (state.value.sort == sort) return
+        screenModelScope.launch {
+            reduceState {
+                copy(sort = sort, isLoading = true, error = null, currentPage = 1, canLoadMore = true)
+            }
+            fetchFirstPage()
+        }
+    }
+
+    private fun applyCategory(category: String?) {
+        if (state.value.selectedCategory == category) return
+        screenModelScope.launch {
+            reduceState {
+                copy(
+                    selectedCategory = category,
+                    isLoading = true,
+                    error = null,
+                    currentPage = 1,
+                    canLoadMore = true
+                )
+            }
+            fetchFirstPage()
         }
     }
 
@@ -86,7 +121,12 @@ class RegistryViewModel(
         screenModelScope.launch {
             val nextPage = currentState.currentPage + 1
             reduceState { copy(isLoadingMore = true) }
-            getRegistryModelsUseCase(currentState.searchQuery, nextPage)
+            getRegistryModelsUseCase(
+                query = currentState.searchQuery,
+                page = nextPage,
+                sort = currentState.sort,
+                category = currentState.selectedCategory
+            )
                 .onSuccess { newModels ->
                     val existingIds = currentState.models.map { it.id }.toSet()
                     val uniqueNewModels = newModels.filter { it.id !in existingIds }

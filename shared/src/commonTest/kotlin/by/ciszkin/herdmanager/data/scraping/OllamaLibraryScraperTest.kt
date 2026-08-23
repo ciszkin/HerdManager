@@ -1,5 +1,7 @@
 package by.ciszkin.herdmanager.data.scraping
 
+import by.ciszkin.herdmanager.domain.model.RegistrySort
+import io.ktor.http.URLBuilder
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -227,5 +229,36 @@ class OllamaLibraryScraperTest {
         assertEquals(12_345L, OllamaLibraryScraper.parsePullCount("12,345 Pulls"))
         assertEquals(5L, OllamaLibraryScraper.parsePullCount("5"))
         assertEquals(0L, OllamaLibraryScraper.parsePullCount(""))
+    }
+
+    @Test
+    fun `buildSearchUrl omits params for the default popular first page`() {
+        assertEquals("https://ollama.com/search", OllamaLibraryScraper.buildSearchUrl())
+    }
+
+    @Test
+    fun `buildSearchUrl keeps the existing query and pagination params`() {
+        assertEquals("https://ollama.com/search?page=2", OllamaLibraryScraper.buildSearchUrl(page = 2))
+        assertEquals("https://ollama.com/search?q=llama", OllamaLibraryScraper.buildSearchUrl(query = "llama"))
+        assertEquals(
+            "https://ollama.com/search?q=llama&page=3",
+            OllamaLibraryScraper.buildSearchUrl(query = "llama", page = 3)
+        )
+    }
+
+    @Test
+    fun `buildSearchUrl appends sort and category params`() {
+        assertEquals("https://ollama.com/search?c=vision", OllamaLibraryScraper.buildSearchUrl(category = "vision"))
+        assertEquals("https://ollama.com/search?o=newest", OllamaLibraryScraper.buildSearchUrl(sort = RegistrySort.NEWEST))
+        assertEquals(
+            "https://ollama.com/search?q=code&page=2&c=tools&o=newest",
+            OllamaLibraryScraper.buildSearchUrl(query = "code", page = 2, sort = RegistrySort.NEWEST, category = "tools")
+        )
+    }
+
+    @Test
+    fun `buildSearchUrl encodes query values`() {
+        val url = OllamaLibraryScraper.buildSearchUrl(query = "hello world")
+        assertEquals("hello world", URLBuilder(url).parameters["q"])
     }
 }

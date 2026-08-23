@@ -2,9 +2,11 @@ package by.ciszkin.herdmanager.data.scraping
 
 import by.ciszkin.herdmanager.domain.error.RegistryParseException
 import by.ciszkin.herdmanager.domain.model.RegistryModel
+import by.ciszkin.herdmanager.domain.model.RegistrySort
 import io.ktor.client.HttpClient
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.http.URLBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
@@ -19,16 +21,14 @@ object OllamaLibraryScraper : KoinComponent {
 
     private val httpClient: HttpClient by inject(named("scraper"))
 
-    suspend fun fetchModels(query: String, page: Int): Result<List<RegistryModel>> = runCatching {
-        val url = when {
-            query.isEmpty() && page == 1 -> BASE_URL
-            query.isEmpty() -> "$BASE_URL?page=$page"
-            page == 1 -> "$BASE_URL?q=$query"
-            else -> "$BASE_URL?q=$query&page=$page"
-        }
-
+    suspend fun fetchModels(
+        query: String,
+        page: Int,
+        sort: RegistrySort = RegistrySort.POPULAR,
+        category: String? = null
+    ): Result<List<RegistryModel>> = runCatching {
         val html: String = withContext(Dispatchers.IO) {
-            httpClient.get(url) {
+            httpClient.get(buildSearchUrl(query, page, sort, category)) {
                 headers {
                     append("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36")
                     append("Accept", "*/*")
@@ -50,6 +50,31 @@ object OllamaLibraryScraper : KoinComponent {
         }
 
         models
+    }
+
+    /**
+     * Builds the ollama.com/search URL for the given query, page, sort order
+     * and capability filter. Params are appended through [URLBuilder] so query
+     * values are properly URL-encoded; the popular sort (the site's default)
+     * and a null category simply omit their params.
+     */
+    internal fun buildSearchUrl(
+        query: String = "",
+        page: Int = 1,
+        sort: RegistrySort = RegistrySort.POPULAR,
+        category: String? = null
+    ): String {
+        val url = URLBuilder(BASE_URL)
+        if (query.isNotBlank()) url.parameters.append("q", query)
+        if (page > 1) url.parameters.append("page", page.toString())
+        if (category != null) url.parameters.append("c", category)
+        if (sort != RegistrySort.POPULAR) url.parameters.append("o", sort.toQueryParam())
+        return url.buildString()
+    }
+
+    private fun RegistrySort.toQueryParam(): String = when (this) {
+        RegistrySort.POPULAR -> "popular"
+        RegistrySort.NEWEST -> "newest"
     }
 
     /**

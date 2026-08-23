@@ -2,6 +2,7 @@ package by.ciszkin.herdmanager.presentation.registry
 
 import by.ciszkin.herdmanager.domain.model.PullResult
 import by.ciszkin.herdmanager.domain.model.RegistryModel
+import by.ciszkin.herdmanager.domain.model.RegistrySort
 import by.ciszkin.herdmanager.domain.usecase.GetRegistryModelsUseCase
 import by.ciszkin.herdmanager.domain.usecase.PullModelUseCase
 import by.ciszkin.herdmanager.domain.repository.RegistryRepository
@@ -37,6 +38,10 @@ class RegistryViewModelTest {
     private lateinit var pullModelUseCase: PullModelUseCase
     private lateinit var viewModel: RegistryViewModel
 
+    private var requestedSort: RegistrySort? = null
+    private var requestedCategory: String? = null
+    private var fetchCount = 0
+
     private val testModels = listOf(
         RegistryModel(
             id = "llama3",
@@ -65,7 +70,16 @@ class RegistryViewModelTest {
 
         // Create test registry repository
         testRegistryRepository = object : RegistryRepository {
-            override suspend fun getModels(query: String, page: Int): Result<List<RegistryModel>> {
+            override suspend fun getModels(
+                query: String,
+                page: Int,
+                sort: RegistrySort,
+                category: String?
+            ): Result<List<RegistryModel>> {
+                fetchCount++
+                requestedSort = sort
+                requestedCategory = category
+
                 // Simulate pagination - return empty list for page > 1
                 return if (page > 1) {
                     Result.success(emptyList())
@@ -79,7 +93,13 @@ class RegistryViewModelTest {
                     } else {
                         testModels
                     }
-                    Result.success(filteredModels)
+                    // Filter by capability if a category is selected
+                    val categoryFiltered = if (category != null) {
+                        filteredModels.filter { it.capabilities.contains(category) }
+                    } else {
+                        filteredModels
+                    }
+                    Result.success(categoryFiltered)
                 }
             }
         }
@@ -153,7 +173,7 @@ class RegistryViewModelTest {
     fun `LoadModels intent handles loading failure`() = runTest {
         // Create failing repository
         val failingRepository = object : RegistryRepository {
-            override suspend fun getModels(query: String, page: Int): Result<List<RegistryModel>> {
+            override suspend fun getModels(query: String, page: Int, sort: RegistrySort, category: String?): Result<List<RegistryModel>> {
                 return Result.failure(Exception("Network error"))
             }
         }
@@ -215,7 +235,7 @@ class RegistryViewModelTest {
     @Test
     fun `SearchModels intent handles search failure`() = runTest {
         val failingRepository = object : RegistryRepository {
-            override suspend fun getModels(query: String, page: Int): Result<List<RegistryModel>> {
+            override suspend fun getModels(query: String, page: Int, sort: RegistrySort, category: String?): Result<List<RegistryModel>> {
                 return Result.failure(Exception("Search failed"))
             }
         }
@@ -256,7 +276,7 @@ class RegistryViewModelTest {
         // First trigger an error
         val failingRepository = object : RegistryRepository {
             private var attemptCount = 0
-            override suspend fun getModels(query: String, page: Int): Result<List<RegistryModel>> {
+            override suspend fun getModels(query: String, page: Int, sort: RegistrySort, category: String?): Result<List<RegistryModel>> {
                 return if (attemptCount++ == 0) {
                     Result.failure(Exception("First attempt failed"))
                 } else {
@@ -342,7 +362,7 @@ class RegistryViewModelTest {
     fun `LoadMore intent handles load failure`() = runTest {
         val failingRepository = object : RegistryRepository {
             private var callCount = 0
-            override suspend fun getModels(query: String, page: Int): Result<List<RegistryModel>> {
+            override suspend fun getModels(query: String, page: Int, sort: RegistrySort, category: String?): Result<List<RegistryModel>> {
                 return if (callCount++ == 0) {
                     Result.success(testModels)
                 } else {
@@ -540,7 +560,7 @@ class RegistryViewModelTest {
     fun `multiple LoadMore calls properly increment page number`() = runTest {
         // Create a repository that returns models for multiple pages
         val multiPageRepository = object : RegistryRepository {
-            override suspend fun getModels(query: String, page: Int): Result<List<RegistryModel>> {
+            override suspend fun getModels(query: String, page: Int, sort: RegistrySort, category: String?): Result<List<RegistryModel>> {
                 return when (page) {
                     1 -> Result.success(testModels)
                     2 -> Result.success(testModels.take(1)) // Return one model on page 2
@@ -579,5 +599,111 @@ class RegistryViewModelTest {
         val state = viewModel.state.value
         assertEquals(1, state.currentPage)
         assertEquals("test", state.searchQuery)
+    }
+
+    @Test
+    fun `SelectSort intent reloads from page one with the selected sort`() = runTest {
+        viewModel.onIntent(RegistryIntent.LoadModels)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onIntent(RegistryIntent.SelectSort(RegistrySort.NEWEST))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(RegistrySort.NEWEST, state.sort)
+        assertEquals(RegistrySort.NEWEST, requestedSort)
+        assertEquals(1, state.currentPage)
+        assertFalse(state.isLoading)
+        assertEquals(testModels.size, state.models.size)
+        assertNull(state.error)
+    }
+
+    @Test
+    fun `SelectSort with the same sort does not fetch again`() = runTest {
+        viewModel.onIntent(RegistryIntent.LoadModels)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, fetchCount)
+
+        viewModel.onIntent(RegistryIntent.SelectSort(RegistrySort.POPULAR))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, fetchCount, "Re-selecting the active sort must not trigger a reload")
+    }
+
+    @Test
+    fun `SelectCategory intent filters models by capability`() = runTest {
+        viewModel.onIntent(RegistryIntent.LoadModels)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onIntent(RegistryIntent.SelectCategory("instruct"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals("instruct", state.selectedCategory)
+        assertEquals("instruct", requestedCategory)
+        assertEquals(1, state.models.size)
+        assertEquals("llama3", state.models[0].name)
+        assertEquals(1, state.currentPage)
+        assertNull(state.error)
+    }
+
+    @Test
+    fun `SelectCategory with null clears the filter`() = runTest {
+        viewModel.onIntent(RegistryIntent.SelectCategory("instruct"))
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.state.value.models.size)
+
+        viewModel.onIntent(RegistryIntent.SelectCategory(null))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertNull(state.selectedCategory)
+        assertNull(requestedCategory)
+        assertEquals(testModels.size, state.models.size)
+    }
+
+    @Test
+    fun `SelectSort resets pagination to page one`() = runTest {
+        viewModel.onIntent(RegistryIntent.LoadModels)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.onIntent(RegistryIntent.LoadMore)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(2, viewModel.state.value.currentPage)
+
+        viewModel.onIntent(RegistryIntent.SelectSort(RegistrySort.NEWEST))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.state.value.currentPage)
+        assertEquals(RegistrySort.NEWEST, requestedSort)
+    }
+
+    @Test
+    fun `search preserves the active category filter`() = runTest {
+        viewModel.onIntent(RegistryIntent.SelectCategory("chat"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onIntent(RegistryIntent.SearchModels("mistral"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals("chat", state.selectedCategory)
+        assertEquals("mistral", state.searchQuery)
+        assertEquals(1, state.models.size)
+        assertEquals("mistral", state.models[0].name)
+    }
+
+    @Test
+    fun `LoadMore keeps the active sort and category`() = runTest {
+        viewModel.onIntent(RegistryIntent.SelectSort(RegistrySort.NEWEST))
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.onIntent(RegistryIntent.SelectCategory("chat"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onIntent(RegistryIntent.LoadMore)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(2, viewModel.state.value.currentPage)
+        assertEquals(RegistrySort.NEWEST, requestedSort)
+        assertEquals("chat", requestedCategory)
     }
 }

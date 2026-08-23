@@ -4,6 +4,7 @@ import by.ciszkin.herdmanager.domain.error.AppException
 import by.ciszkin.herdmanager.domain.error.ConnectionError
 import by.ciszkin.herdmanager.domain.error.UnexpectedError
 import by.ciszkin.herdmanager.domain.model.RegistryModel
+import by.ciszkin.herdmanager.domain.model.RegistrySort
 import by.ciszkin.herdmanager.domain.repository.RegistryRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -44,7 +45,7 @@ class GetRegistryModelsUseCaseTest {
         val dispatcher: TestDispatcher = UnconfinedTestDispatcher(testScheduler)
         val repository = mockk<RegistryRepository>()
         var calls = 0
-        coEvery { repository.getModels("qwen", 1) } answers {
+        coEvery { repository.getModels("qwen", 1, RegistrySort.POPULAR, null) } answers {
             calls++
             if (calls < 3) retryableFailure() else Result.success(testModels)
         }
@@ -54,7 +55,7 @@ class GetRegistryModelsUseCaseTest {
 
         assertTrue(result.isSuccess)
         assertEquals(3, calls)
-        coVerify(exactly = 3) { repository.getModels("qwen", 1) }
+        coVerify(exactly = 3) { repository.getModels("qwen", 1, RegistrySort.POPULAR, null) }
     }
 
     @Test
@@ -62,7 +63,7 @@ class GetRegistryModelsUseCaseTest {
         val dispatcher: TestDispatcher = UnconfinedTestDispatcher(testScheduler)
         val repository = mockk<RegistryRepository>()
         var calls = 0
-        coEvery { repository.getModels("qwen", 1) } answers {
+        coEvery { repository.getModels("qwen", 1, RegistrySort.POPULAR, null) } answers {
             calls++
             nonRetryableFailure()
         }
@@ -72,6 +73,6 @@ class GetRegistryModelsUseCaseTest {
 
         assertTrue(result.isFailure)
         assertEquals(1, calls, "Non-retryable failure must not be retried")
-        coVerify(exactly = 1) { repository.getModels("qwen", 1) }
+        coVerify(exactly = 1) { repository.getModels("qwen", 1, RegistrySort.POPULAR, null) }
     }
 }

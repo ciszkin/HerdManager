@@ -25,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import by.ciszkin.herdmanager.domain.model.PullResult
+import by.ciszkin.herdmanager.domain.usecase.GetRegistryModelsUseCase
+import by.ciszkin.herdmanager.domain.usecase.PullModelUseCase
 import by.ciszkin.herdmanager.presentation.components.EmptyView
 import by.ciszkin.herdmanager.presentation.components.ErrorView
 import by.ciszkin.herdmanager.presentation.components.HerdTopBar
@@ -48,8 +50,8 @@ object RegistryScreen : Screen {
 
     @Composable
     override fun Content() {
-        val getRegistryModelsUseCase = koinInject<by.ciszkin.herdmanager.domain.usecase.GetRegistryModelsUseCase>()
-        val pullModelUseCase = koinInject<by.ciszkin.herdmanager.domain.usecase.PullModelUseCase>()
+        val getRegistryModelsUseCase = koinInject<GetRegistryModelsUseCase>()
+        val pullModelUseCase = koinInject<PullModelUseCase>()
         val viewModel =
             rememberScreenModel {
                 RegistryViewModel(
@@ -130,6 +132,13 @@ object RegistryScreen : Screen {
                     modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
+                )
+                RegistryFilterBar(
+                    selectedCategory = state.selectedCategory,
+                    sort = state.sort,
+                    onCategorySelected = { viewModel.onIntent(RegistryIntent.SelectCategory(it)) },
+                    onSortSelected = { viewModel.onIntent(RegistryIntent.SelectSort(it)) },
+                    modifier = Modifier.padding(bottom = 4.dp),
                 )
                 when {
                     state.isLoading -> {
