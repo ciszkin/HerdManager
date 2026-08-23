@@ -14,7 +14,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
-import by.ciszkin.herdmanager.di.mainActivityComponentName
 import by.ciszkin.herdmanager.domain.model.ThemeMode
 import by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase
 import by.ciszkin.herdmanager.presentation.settings.AvailableLanguage
@@ -26,6 +25,13 @@ import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.util.Locale
+
+/**
+ * Current activity's component name, used to recreate the activity after a
+ * language change. Lives in the app module (not shared) since only
+ * [MainActivity] reads/writes it.
+ */
+var mainActivityComponentName: ComponentName? = null
 
 class MainActivity : ComponentActivity(), KoinComponent {
     override fun onCreate(savedInstanceState: Bundle?) {

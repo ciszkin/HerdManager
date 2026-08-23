@@ -1,7 +1,6 @@
 package by.ciszkin.herdmanager.di
 
 import android.content.Context
-import android.content.ComponentName
 import org.koin.core.context.GlobalContext
 
 /**
@@ -11,11 +10,6 @@ import org.koin.core.context.GlobalContext
  * It provides platform-specific context for Android-only dependencies.
  */
 lateinit var localApplicationContext: Context
-
-/**
- * Main activity component name for system bar appearance management.
- */
-var mainActivityComponentName: ComponentName? = null
 
 /**
  * Provides the Android application context with fallback to Koin properties.
