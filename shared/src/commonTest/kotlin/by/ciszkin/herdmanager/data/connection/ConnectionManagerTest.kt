@@ -7,6 +7,7 @@ import io.ktor.client.HttpClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -85,10 +86,35 @@ class ConnectionManagerTest {
     }
 
     @Test
-    fun `getApiService throws when start never called`() {
+    fun `getApiService called before start waits for initialization and returns the service`() {
         runBlocking {
             val (factory, _) = mockClientFactory()
             val connectionManager = ConnectionManager(settingsRepository, factory).also { manager = it }
+
+            // Simulate the Desktop boot race: a fetch starts before the host's
+            // start() effect has run, then start() happens shortly after.
+            val fetched = async {
+                withTimeout(5.seconds) { connectionManager.getApiService() }
+            }
+            delay(50)
+            connectionManager.start()
+
+            val service = fetched.await()
+            assertNotNull(service)
+            assertTrue(service === connectionManager.getApiService())
+            assertEquals("http://localhost:11434", connectionManager.currentUrl)
+        }
+    }
+
+    @Test
+    fun `getApiService throws when start never called`() {
+        runBlocking {
+            val (factory, _) = mockClientFactory()
+            val connectionManager = ConnectionManager(
+                settingsRepository,
+                factory,
+                startWaitTimeoutMs = 100
+            ).also { manager = it }
 
             assertFailsWith<IllegalStateException> {
                 connectionManager.getApiService()

@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Manages connection monitoring lifecycle and API service recreation.
@@ -42,11 +43,14 @@ import kotlinx.coroutines.launch
  * @param settingsRepository Repository for observing settings changes
  * @param clientFactory Creates the HTTP client for an Ollama server URL.
  * Defaults to [createOllamaHttpClient]; injectable for tests.
+ * @param startWaitTimeoutMs How long [getApiService] waits for [start] to be
+ * invoked before failing (see [getApiService]).
  */
 @OptIn(FlowPreview::class)
 class ConnectionManager(
     private val settingsRepository: SettingsRepository,
-    private val clientFactory: (serverUrl: String) -> HttpClient = ::createOllamaHttpClient
+    private val clientFactory: (serverUrl: String) -> HttpClient = ::createOllamaHttpClient,
+    private val startWaitTimeoutMs: Long = START_WAIT_TIMEOUT_MS
 ) {
     @Volatile
     private var managerScope: CoroutineScope? = null
@@ -69,15 +73,38 @@ class ConnectionManager(
     @Volatile
     private var initDeferred: CompletableDeferred<Unit>? = null
 
+    /**
+     * Completed by [start] so a fetch that races the host's start() call can
+     * wait for it instead of failing with "not initialized". Completes at most
+     * once; stop()/start() cycles keep it completed.
+     */
+    private val started = CompletableDeferred<Unit>()
+
     companion object {
         private const val SETTINGS_DEBOUNCE_MS = 500L
+        private const val START_WAIT_TIMEOUT_MS = 10_000L
     }
 
     /**
      * Gets the current API service, suspending until initialization completes.
-     * @throws IllegalStateException if start() hasn't been called
+     *
+     * If [start] has not been called yet — e.g. on Desktop the window content
+     * can compose and fetch before the host's start() effect runs — waits up
+     * to [startWaitTimeoutMs] for it instead of failing immediately, so the
+     * boot fetch never surfaces a hard startup race as an error.
+     *
+     * @throws IllegalStateException if the manager is still uninitialized after
+     * the wait (start() never called, or the process failed mid-init).
      */
     suspend fun getApiService(): OllamaApiService {
+        initDeferred?.await()
+        val service = apiService
+        if (service != null) return service
+        return awaitServiceAfterStart()
+    }
+
+    private suspend fun awaitServiceAfterStart(): OllamaApiService {
+        withTimeoutOrNull(startWaitTimeoutMs) { started.await() }
         initDeferred?.await()
         return apiService ?: throw IllegalStateException(
             "ConnectionManager not initialized."
@@ -109,6 +136,9 @@ class ConnectionManager(
         managerScope = scope
         val deferred = CompletableDeferred<Unit>()
         initDeferred = deferred
+        // Signal after initDeferred is visible so waiters never observe a
+        // completed start signal without a deferred to await.
+        if (!started.isCompleted) started.complete(Unit)
 
         // Async initialization from current settings
         scope.launch {
