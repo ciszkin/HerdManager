@@ -1,30 +1,7 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.composeCompiler)
-}
-
-kotlin {
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
-
-    sourceSets {
-        androidMain.dependencies {
-            implementation(project(":shared"))
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.activity.compose)
-            implementation(libs.ktor.client.okhttp)
-            implementation(libs.jsoup)
-            implementation(libs.koin.core)
-            implementation(libs.koin.compose)
-        }
-    }
 }
 
 android {
@@ -62,5 +39,12 @@ android {
 }
 
 dependencies {
+    implementation(project(":shared"))
+    implementation(libs.compose.uiToolingPreview)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.jsoup)
+    implementation(libs.koin.core)
+    implementation(libs.koin.compose)
     debugImplementation(libs.compose.uiTooling)
 }
