@@ -5,6 +5,7 @@ import by.ciszkin.herdmanager.data.api.createOllamaHttpClient
 import by.ciszkin.herdmanager.domain.repository.SettingsRepository
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -132,7 +133,13 @@ class ConnectionManager(
         if (isStarted) return
         isStarted = true
 
-        val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+        val scope = CoroutineScope(
+            Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, _ ->
+                // Background observation (settings flow, connection polling)
+                // must never crash the host: a transient settings-flow failure
+                // is contained here and the last known services stay in place.
+            }
+        )
         managerScope = scope
         val deferred = CompletableDeferred<Unit>()
         initDeferred = deferred
