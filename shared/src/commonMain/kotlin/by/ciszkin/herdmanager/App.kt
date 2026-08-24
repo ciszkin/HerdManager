@@ -27,6 +27,14 @@ import by.ciszkin.herdmanager.presentation.settings.SettingsScreen
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
 
+/**
+ * Currently selected navigation route, hoisted to process scope so it survives
+ * both the language-change UI rebuild (key(appliedLanguage) recreates the
+ * composition) and Android activity recreation on configuration changes —
+ * otherwise the app always returns to the Models screen.
+ */
+private val navigationRoute = mutableStateOf(NavigationItem.Models.route)
+
 @Composable
 fun App() {
     val observeSettingsUseCase: ObserveSettingsUseCase = koinInject()
@@ -62,13 +70,13 @@ fun App() {
         else -> isSystemInDarkTheme()
     }
 
+    val selectedRoute by navigationRoute
+
     key(appliedLanguage) {
         MaterialTheme(colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()) {
-            var selectedRoute by remember { mutableStateOf(NavigationItem.Models.route) }
-
             AdaptiveScaffold(
                 selectedRoute = selectedRoute,
-                onRouteSelected = { selectedRoute = it },
+                onRouteSelected = { navigationRoute.value = it },
                 language = settings?.language ?: "en",
                 hasUpdateBadge = updateInfo?.isNewerAvailable == true
             ) { contentModifier ->
