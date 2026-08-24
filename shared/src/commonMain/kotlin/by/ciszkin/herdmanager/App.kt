@@ -9,12 +9,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import by.ciszkin.herdmanager.domain.model.ThemeMode
 import by.ciszkin.herdmanager.domain.usecase.CheckForOllamaUpdateUseCase
 import by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase
+import by.ciszkin.herdmanager.util.setDefaultLocale
 import org.koin.compose.koinInject
 import by.ciszkin.herdmanager.presentation.components.AdaptiveScaffold
 import by.ciszkin.herdmanager.presentation.components.NavigationItem
@@ -38,49 +40,65 @@ fun App() {
         checkForOllamaUpdateUseCase.refreshIfDue()
     }
 
+    val language = settings?.language ?: "en"
+
+    // CMP resources resolve from the JVM default locale (Locale.current), but
+    // only when a composition re-reads it — resource states are cached on the
+    // platform environment. Apply the language in two steps: set the default
+    // locale, then key the whole UI on it so every resource resolves again.
+    // Initial "en" guarantees the first observed (possibly persisted) language
+    // always triggers an apply-and-rebuild pass.
+    var appliedLanguage by remember { mutableStateOf("en") }
+    LaunchedEffect(language) {
+        if (appliedLanguage != language) {
+            setDefaultLocale(language)
+            appliedLanguage = language
+        }
+    }
+
     val isDarkTheme = when (settings?.themeMode) {
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
         else -> isSystemInDarkTheme()
     }
 
-    val colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
+    key(appliedLanguage) {
+        MaterialTheme(colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()) {
+            var selectedRoute by remember { mutableStateOf(NavigationItem.Models.route) }
 
-    MaterialTheme(colorScheme = colorScheme) {
-        var selectedRoute by remember { mutableStateOf(NavigationItem.Models.route) }
-
-        AdaptiveScaffold(
-            selectedRoute = selectedRoute,
-            onRouteSelected = { selectedRoute = it},
-            language = settings?.language ?: "en",
-            hasUpdateBadge = updateInfo?.isNewerAvailable == true
-        ) { contentModifier ->
-            Surface(
-                modifier = contentModifier,
-                color = colorScheme.background
-            ) {
-                when (selectedRoute) {
-                    NavigationItem.Models.route -> {
-                        Navigator(ModelListScreen) { navigator ->
-                            SlideTransition(navigator)
+            AdaptiveScaffold(
+                selectedRoute = selectedRoute,
+                onRouteSelected = { selectedRoute = it },
+                language = settings?.language ?: "en",
+                hasUpdateBadge = updateInfo?.isNewerAvailable == true
+            ) { contentModifier ->
+                Surface(
+                    modifier = contentModifier,
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    when (selectedRoute) {
+                        NavigationItem.Models.route -> {
+                            Navigator(ModelListScreen) { navigator ->
+                                SlideTransition(navigator)
+                            }
                         }
-                    }
 
-                    NavigationItem.Registry.route -> {
-                        Navigator(RegistryScreen) { navigator ->
-                            SlideTransition(navigator)
+                        NavigationItem.Registry.route -> {
+                            Navigator(RegistryScreen) { navigator ->
+                                SlideTransition(navigator)
+                            }
                         }
-                    }
 
-                    NavigationItem.Running.route -> {
-                        Navigator(RunningScreen) { navigator ->
-                            SlideTransition(navigator)
+                        NavigationItem.Running.route -> {
+                            Navigator(RunningScreen) { navigator ->
+                                SlideTransition(navigator)
+                            }
                         }
-                    }
 
-                    NavigationItem.Settings.route -> {
-                        Navigator(SettingsScreen) { navigator ->
-                            SlideTransition(navigator)
+                        NavigationItem.Settings.route -> {
+                            Navigator(SettingsScreen) { navigator ->
+                                SlideTransition(navigator)
+                            }
                         }
                     }
                 }

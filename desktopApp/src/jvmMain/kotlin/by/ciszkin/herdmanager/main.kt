@@ -21,7 +21,6 @@ import by.ciszkin.herdmanager.domain.model.ThemeMode
 import by.ciszkin.herdmanager.domain.usecase.ObserveSettingsUseCase
 import org.koin.compose.koinInject
 import java.awt.Dimension
-import java.util.Locale
 
 fun main() {
     initKoin()
@@ -29,13 +28,6 @@ fun main() {
     application {
         val observeSettingsUseCase: ObserveSettingsUseCase = koinInject()
         val settings by observeSettingsUseCase().collectAsState(initial = null)
-        val locale = when (settings?.language) {
-            "be" -> Locale("be")
-            else -> Locale("en")
-        }
-        LaunchedEffect(locale) {
-            Locale.setDefault(locale)
-        }
 
         val connectionManager: ConnectionManager = koinInject()
         LaunchedEffect(Unit) {
